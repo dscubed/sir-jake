@@ -250,44 +250,73 @@ textarea {
 	color: #ffffff;
 }
 
-/* Form fields (restyled to the handoff in the form steps) */
+/* Form fields on white (design handoff: application page). */
 .field {
-	margin-bottom: var(--space-5);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
 }
 
-.field > label {
-	display: block;
+.field > label,
+.field > legend {
+	padding: 0;
 	font-size: var(--text-sm);
 	font-weight: 500;
+	color: var(--ink);
 }
 
 .field .optional {
-	color: var(--color-text-muted);
+	color: var(--muted);
 	font-weight: 400;
 }
 
 .field .help {
-	margin: var(--space-1) 0 0;
-	color: var(--color-text-muted);
+	margin-top: -4px;
 	font-size: var(--text-sm);
+	color: var(--muted);
 }
 
-.field input:not([type='radio'], [type='checkbox']),
+.field input:not([type='radio'], [type='checkbox'], [type='file']),
 .field select,
 .field textarea {
 	display: block;
 	width: 100%;
-	margin-top: var(--space-2);
-	padding: 0 14px;
-	min-height: 48px;
-	border: 1px solid var(--color-border);
+	border: 1px solid var(--border);
 	border-radius: var(--radius-md);
-	background: var(--color-bg);
+	background: #ffffff;
+	color: var(--ink);
 	font-size: var(--text-base);
+	transition:
+		border-color var(--duration-fast) var(--ease-out),
+		box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.field input:not([type='radio'], [type='checkbox'], [type='file']),
+.field select {
+	height: 48px;
+	padding: 0 14px;
+}
+
+.field select {
+	padding-inline: 12px;
+}
+
+.field textarea {
+	padding: 12px 14px;
+	line-height: var(--leading-normal);
+	resize: vertical;
+}
+
+/* The handoff turns the border blue on focus; a soft ring keeps focus visible for keyboard users. */
+.field :is(input, select, textarea):focus-visible {
+	outline: none;
+	border-color: var(--blue);
+	box-shadow: 0 0 0 3px rgba(21, 110, 226, 0.25);
 }
 
 .field [aria-invalid='true']:is(input, select, textarea) {
-	border-color: var(--color-danger);
+	border-color: var(--error);
 }
 
 @media (prefers-reduced-motion: reduce) {

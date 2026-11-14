@@ -16,9 +16,7 @@
 
 <style>
 	.field-error {
-		margin: var(--space-1) 0 0;
-		color: var(--color-danger);
 		font-size: var(--text-sm);
-		font-weight: 600;
+		color: var(--error);
 	}
 </style>
