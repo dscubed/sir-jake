@@ -451,3 +451,6 @@ Dev B builds against the fake repository until step 4.1, when Dev A's real Notio
 
 - [ ] The form shows the closed state, and a late `curl` request gets `403` (Dev B)
 - [ ] A deletion date for unsuccessful applicants' data is agreed with the committee (Dev A)
+
+**Additional stuff**
+- DO NOT COMMIT ANYTHING. EVERY CHANGE SHOULD BE COMMUNICATED TO A DEVELOPER AND THEY WILL MANUALLY COMMIT!
