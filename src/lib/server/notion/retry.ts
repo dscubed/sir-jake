@@ -1,9 +1,9 @@
 import { APIErrorCode, isHTTPResponseError, RequestTimeoutError } from '@notionhq/client';
 
 /**
- * How a failed Notion request should be treated.
+ * How a failed Notion request should be treated:
  * - `rejected`: Notion turned the request away without processing it (rate limited or overloaded).
- *   Safe to retry any request, including page creation.
+ *   Safe to retry any request.
  * - `unknown`: a timeout, network error or 5xx. Notion may or may not have processed it.
  * - `permanent`: any other error, such as a bad token or an invalid payload. Retrying won't help.
  */

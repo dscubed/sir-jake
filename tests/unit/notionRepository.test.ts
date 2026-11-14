@@ -5,15 +5,33 @@ import type { Application } from '../../src/lib/domain/application';
 import { children, properties } from '../../src/lib/server/notion/pageBuilder';
 import { NotionApplicantRepository } from '../../src/lib/server/notion/repository';
 import { UpstreamError } from '../../src/lib/server/ports';
+import {
+	badGateway,
+	networkError,
+	rateLimited,
+	serverError,
+	timeout,
+	validationError
+} from '../fixtures/notionErrors';
 import { makeResume } from '../fixtures/pdf';
+
+const sleep = vi.fn().mockResolvedValue(undefined);
 
 function repoWith(
 	fileUploads: Partial<Client['fileUploads']>,
-	pages: Partial<Client['pages']> = {}
+	pages: Partial<Client['pages']> = {},
+	dataSources: Partial<Client['dataSources']> = {}
 ) {
-	const client = { fileUploads, pages } as unknown as Client;
-	return new NotionApplicantRepository({ client, dataSourceId: 'ds', config: recruitment });
+	const client = { fileUploads, pages, dataSources } as unknown as Client;
+	return new NotionApplicantRepository({
+		client,
+		dataSourceId: 'ds',
+		config: recruitment,
+		retry: { sleep }
+	});
 }
+
+const found = (id?: string) => ({ results: id ? [{ id }] : [] });
 
 describe('NotionApplicantRepository.uploadResume', () => {
 	it('creates a single-part PDF upload, sends the bytes and returns the id', async () => {
@@ -91,5 +109,130 @@ describe('NotionApplicantRepository.create', () => {
 			.catch((e: unknown) => e);
 		expect(error).toBeInstanceOf(UpstreamError);
 		expect((error as UpstreamError).operation).toBe('create');
+	});
+});
+
+describe('retry policy', () => {
+	const app: Application = {
+		submissionId: 'sub-1',
+		fullName: 'Ada Lovelace',
+		email: 'ada@student.unimelb.edu.au',
+		degree: 'BSc',
+		graduation: recruitment.graduationOptions[0],
+		availableGroup: true,
+		availableIndividual: true,
+		firstPreference: recruitment.roles[0].id,
+		secondPreference: recruitment.roles[1].id,
+		responses: { general: 'a', firstPreference: 'b', secondPreference: 'c' },
+		resume: makeResume(),
+		submittedAt: new Date('2027-02-20T01:30:00Z')
+	};
+
+	describe('existsByEmail', () => {
+		it('retries a 502 and then succeeds', async () => {
+			const query = vi.fn().mockRejectedValueOnce(badGateway()).mockResolvedValue(found('p1'));
+			expect(await repoWith({}, {}, { query }).existsByEmail(app.email)).toBe(true);
+			expect(query).toHaveBeenCalledTimes(2);
+		});
+
+		it('gives up with UpstreamError after 2 retries', async () => {
+			const query = vi.fn().mockRejectedValue(timeout());
+			await expect(repoWith({}, {}, { query }).existsByEmail(app.email)).rejects.toMatchObject({
+				name: 'UpstreamError',
+				operation: 'existsByEmail'
+			});
+			expect(query).toHaveBeenCalledTimes(3);
+		});
+	});
+
+	describe('uploadResume', () => {
+		it('starts a fresh upload after a network error', async () => {
+			const create = vi
+				.fn()
+				.mockRejectedValueOnce(networkError())
+				.mockResolvedValue({ id: 'up-2', status: 'pending' });
+			const send = vi.fn().mockResolvedValue({ id: 'up-2', status: 'uploaded' });
+			expect(await repoWith({ create, send }).uploadResume(makeResume())).toBe('up-2');
+			expect(create).toHaveBeenCalledTimes(2);
+		});
+
+		it('retries a 429 on send, honouring Retry-After', async () => {
+			sleep.mockClear();
+			const create = vi.fn().mockResolvedValue({ id: 'up-1', status: 'pending' });
+			const send = vi
+				.fn()
+				.mockRejectedValueOnce(rateLimited(1))
+				.mockResolvedValue({ id: 'up-1', status: 'uploaded' });
+			expect(await repoWith({ create, send }).uploadResume(makeResume())).toBe('up-1');
+			expect(sleep).toHaveBeenCalledWith(1000);
+		});
+	});
+
+	describe('create', () => {
+		it('retries after a 429 and succeeds', async () => {
+			const create = vi.fn().mockRejectedValueOnce(rateLimited(1)).mockResolvedValue({ id: 'p1' });
+			const query = vi.fn();
+			expect(await repoWith({}, { create }, { query }).create(app, 'up-1')).toBe('p1');
+			expect(create).toHaveBeenCalledTimes(2);
+			expect(query).not.toHaveBeenCalled();
+		});
+
+		it('after a 5xx, returns the page if it was created anyway', async () => {
+			const create = vi.fn().mockRejectedValue(serverError());
+			const query = vi.fn().mockResolvedValue(found('p-existing'));
+			expect(await repoWith({}, { create }, { query }).create(app, 'up-1')).toBe('p-existing');
+			expect(create).toHaveBeenCalledTimes(1);
+			expect(query.mock.calls[0][0].filter).toEqual({
+				property: 'Email',
+				email: { equals: app.email }
+			});
+		});
+
+		it('after a 5xx, throws UpstreamError if the page does not exist', async () => {
+			const create = vi.fn().mockRejectedValue(serverError());
+			const query = vi.fn().mockResolvedValue(found());
+			await expect(repoWith({}, { create }, { query }).create(app, 'up-1')).rejects.toMatchObject({
+				name: 'UpstreamError',
+				operation: 'create'
+			});
+			expect(create).toHaveBeenCalledTimes(1);
+		});
+
+		it('after a timeout, checks for the page instead of retrying', async () => {
+			const create = vi.fn().mockRejectedValue(timeout());
+			const query = vi.fn().mockResolvedValue(found('p-existing'));
+			expect(await repoWith({}, { create }, { query }).create(app, 'up-1')).toBe('p-existing');
+			expect(create).toHaveBeenCalledTimes(1);
+		});
+
+		it('throws UpstreamError if the follow-up check also fails', async () => {
+			const create = vi.fn().mockRejectedValue(serverError());
+			const query = vi.fn().mockRejectedValue(serverError());
+			await expect(repoWith({}, { create }, { query }).create(app, 'up-1')).rejects.toMatchObject({
+				name: 'UpstreamError',
+				operation: 'create'
+			});
+		});
+
+		it('does not retry or check after a permanent error', async () => {
+			const create = vi.fn().mockRejectedValue(validationError());
+			const query = vi.fn();
+			await expect(repoWith({}, { create }, { query }).create(app, 'up-1')).rejects.toMatchObject({
+				name: 'UpstreamError',
+				operation: 'create'
+			});
+			expect(create).toHaveBeenCalledTimes(1);
+			expect(query).not.toHaveBeenCalled();
+		});
+
+		it('does not check for the page after 429s run out, since Notion processed none of them', async () => {
+			const create = vi.fn().mockRejectedValue(rateLimited(1));
+			const query = vi.fn();
+			await expect(repoWith({}, { create }, { query }).create(app, 'up-1')).rejects.toMatchObject({
+				name: 'UpstreamError'
+			});
+			expect(create).toHaveBeenCalledTimes(3);
+			expect(query).not.toHaveBeenCalled();
+		});
 	});
 });
