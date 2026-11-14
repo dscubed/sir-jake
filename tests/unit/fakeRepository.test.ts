@@ -23,7 +23,7 @@ const app = (email = 'ada@student.unimelb.edu.au'): Application => ({
 const silent = () => {};
 
 async function submit(repo: FakeApplicantRepository, a = app()) {
-	if (await repo.existsByEmail(a.email)) return 'duplicate';
+	if (await repo.findByEmail(a.email)) return 'duplicate';
 	const uploadId = await repo.uploadResume(a.resume);
 	return repo.create(a, uploadId);
 }
@@ -36,15 +36,19 @@ describe('FakeApplicantRepository', () => {
 		expect(pageId).toMatch(/^fake-page-/);
 		expect(repo.applications.get('ada@student.unimelb.edu.au')?.pageId).toBe(pageId);
 		expect(repo.uploads.size).toBe(1);
-		expect(repo.calls).toEqual(['existsByEmail', 'uploadResume', 'create']);
+		expect(repo.calls).toEqual(['findByEmail', 'uploadResume', 'create']);
 	});
 
-	it('reports an email as existing once it has been created', async () => {
+	it('finds an application by email once it has been created', async () => {
 		const repo = new FakeApplicantRepository({ log: silent });
-		expect(await repo.existsByEmail('ada@student.unimelb.edu.au')).toBe(false);
-		await submit(repo);
-		expect(await repo.existsByEmail('ada@student.unimelb.edu.au')).toBe(true);
-		expect(await repo.existsByEmail('grace@student.unimelb.edu.au')).toBe(false);
+		expect(await repo.findByEmail('ada@student.unimelb.edu.au')).toBeUndefined();
+		const pageId = await submit(repo);
+		expect(await repo.findByEmail('ada@student.unimelb.edu.au')).toEqual({
+			pageId,
+			submissionId: app().submissionId,
+			submittedAt: app().submittedAt
+		});
+		expect(await repo.findByEmail('grace@student.unimelb.edu.au')).toBeUndefined();
 	});
 
 	it('gives each page and upload a different id', async () => {
@@ -55,17 +59,17 @@ describe('FakeApplicantRepository', () => {
 		expect(new Set(repo.uploads.keys()).size).toBe(2);
 	});
 
-	it('with duplicate, reports every email as existing', async () => {
+	it("with duplicate, finds another applicant's page for every email", async () => {
 		const repo = new FakeApplicantRepository({ duplicate: true, log: silent });
 		expect(await submit(repo)).toBe('duplicate');
-		expect(repo.calls).toEqual(['existsByEmail']);
+		expect(repo.calls).toEqual(['findByEmail']);
 		expect(repo.uploads.size).toBe(0);
 	});
 
 	it.each([
-		['upstreamOnCheck', 'existsByEmail', ['existsByEmail']],
-		['upstreamOnUpload', 'uploadResume', ['existsByEmail', 'uploadResume']],
-		['upstreamOnCreate', 'create', ['existsByEmail', 'uploadResume', 'create']]
+		['upstreamOnCheck', 'findByEmail', ['findByEmail']],
+		['upstreamOnUpload', 'uploadResume', ['findByEmail', 'uploadResume']],
+		['upstreamOnCreate', 'create', ['findByEmail', 'uploadResume', 'create']]
 	] as const)('with %s, throws UpstreamError from %s', async (option, operation, calls) => {
 		const repo = new FakeApplicantRepository({ [option]: true, log: silent });
 		const error = await submit(repo).catch((e: unknown) => e);

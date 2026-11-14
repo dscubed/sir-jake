@@ -1,4 +1,4 @@
-import { APIErrorCode, isHTTPResponseError, RequestTimeoutError } from '@notionhq/client';
+import { APIErrorCode, isHTTPResponseError, RequestTimeoutError } from './sdk.ts';
 
 /**
  * How a failed Notion request should be treated:

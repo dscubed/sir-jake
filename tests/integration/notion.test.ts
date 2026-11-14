@@ -37,26 +37,28 @@ afterAll(async () => {
 	);
 });
 
-describe('existsByEmail', () => {
+describe('findByEmail', () => {
 	const seeded = runEmail('seeded');
+	const seededId = crypto.randomUUID();
 
 	beforeAll(async () => {
 		const page = await client.pages.create({
 			parent: { type: 'data_source_id', data_source_id: dataSourceId },
 			properties: {
-				[PROP.name]: { title: [{ text: { content: 'Integration test (existsByEmail)' } }] },
-				[PROP.email]: { email: seeded }
+				[PROP.name]: { title: [{ text: { content: 'Integration test (findByEmail)' } }] },
+				[PROP.email]: { email: seeded },
+				[PROP.submissionId]: { rich_text: [{ text: { content: seededId } }] }
 			}
 		});
 		createdPages.push(page.id);
 	});
 
-	it('returns true for an email that has a page', async () => {
-		expect(await repo.existsByEmail(seeded)).toBe(true);
+	it('finds the page and its submission id for an email that has a page', async () => {
+		expect(await repo.findByEmail(seeded)).toMatchObject({ submissionId: seededId });
 	});
 
-	it('returns false for an email with no page', async () => {
-		expect(await repo.existsByEmail(runEmail('new'))).toBe(false);
+	it('returns undefined for an email with no page', async () => {
+		expect(await repo.findByEmail(runEmail('new'))).toBeUndefined();
 	});
 
 	it('wraps Notion errors in UpstreamError', async () => {
@@ -65,9 +67,9 @@ describe('existsByEmail', () => {
 			dataSourceId,
 			config: recruitment
 		});
-		await expect(broken.existsByEmail(seeded)).rejects.toMatchObject({
+		await expect(broken.findByEmail(seeded)).rejects.toMatchObject({
 			name: 'UpstreamError',
-			operation: 'existsByEmail'
+			operation: 'findByEmail'
 		});
 	});
 });
@@ -113,14 +115,18 @@ describe('create', () => {
 	};
 
 	beforeAll(async () => {
-		expect(await repo.existsByEmail(email)).toBe(false);
+		expect(await repo.findByEmail(email)).toBeUndefined();
 		const uploadId = await repo.uploadResume(app.resume);
 		pageId = await repo.create(app, uploadId);
 		createdPages.push(pageId);
 	});
 
-	it('makes the email count as a duplicate', async () => {
-		expect(await repo.existsByEmail(email)).toBe(true);
+	it('can be found again by email, with its submission id and time', async () => {
+		expect(await repo.findByEmail(email)).toEqual({
+			pageId,
+			submissionId: app.submissionId,
+			submittedAt: app.submittedAt
+		});
 	});
 
 	it('sets every property', async () => {

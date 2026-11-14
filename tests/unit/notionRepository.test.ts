@@ -34,7 +34,22 @@ function repoWith(
 	});
 }
 
-const found = (id?: string) => ({ results: id ? [{ id }] : [] });
+/** A query result holding one page in the shape Notion returns, or none. */
+const found = (id?: string, submissionId = 'sub-1') => ({
+	results: id
+		? [
+				{
+					object: 'page',
+					id,
+					url: `https://notion.so/${id}`,
+					properties: {
+						'Submission ID': { type: 'rich_text', rich_text: [{ plain_text: submissionId }] },
+						'Submitted at': { type: 'date', date: { start: '2027-02-20T12:30:00+11:00' } }
+					}
+				}
+			]
+		: []
+});
 
 describe('NotionApplicantRepository.uploadResume', () => {
 	it('creates a single-part PDF upload, sends the bytes and returns the id', async () => {
@@ -131,18 +146,32 @@ describe('retry policy', () => {
 		submittedAt: new Date('2027-02-20T01:30:00Z')
 	};
 
-	describe('existsByEmail', () => {
+	describe('findByEmail', () => {
+		it('returns the page id, submission id and submission time', async () => {
+			const query = vi.fn().mockResolvedValue(found('p1', 'sub-9'));
+			expect(await repoWith({}, {}, { query }).findByEmail(app.email)).toEqual({
+				pageId: 'p1',
+				submissionId: 'sub-9',
+				submittedAt: new Date('2027-02-20T12:30:00+11:00')
+			});
+		});
+
+		it('returns undefined when there is no page', async () => {
+			const query = vi.fn().mockResolvedValue(found());
+			expect(await repoWith({}, {}, { query }).findByEmail(app.email)).toBeUndefined();
+		});
+
 		it('retries a 502 and then succeeds', async () => {
 			const query = vi.fn().mockRejectedValueOnce(badGateway()).mockResolvedValue(found('p1'));
-			expect(await repoWith({}, {}, { query }).existsByEmail(app.email)).toBe(true);
+			expect((await repoWith({}, {}, { query }).findByEmail(app.email))?.pageId).toBe('p1');
 			expect(query).toHaveBeenCalledTimes(2);
 		});
 
 		it('gives up with UpstreamError after 2 retries', async () => {
 			const query = vi.fn().mockRejectedValue(timeout());
-			await expect(repoWith({}, {}, { query }).existsByEmail(app.email)).rejects.toMatchObject({
+			await expect(repoWith({}, {}, { query }).findByEmail(app.email)).rejects.toMatchObject({
 				name: 'UpstreamError',
-				operation: 'existsByEmail'
+				operation: 'findByEmail'
 			});
 			expect(query).toHaveBeenCalledTimes(3);
 		});
@@ -233,6 +262,15 @@ describe('retry policy', () => {
 			const query = vi.fn().mockRejectedValueOnce(badGateway()).mockResolvedValue(found('p-1'));
 			expect(await repoWith({}, { create }, { query }).create(app, 'up-1')).toBe('p-1');
 			expect(query).toHaveBeenCalledTimes(2);
+		});
+
+		it('ignores a page made by a different submission', async () => {
+			const create = vi.fn().mockRejectedValue(serverError());
+			const query = vi.fn().mockResolvedValue(found('p-other', 'someone-else'));
+			await expect(repoWith({}, { create }, { query }).create(app, 'up-1')).rejects.toMatchObject({
+				name: 'UpstreamError',
+				operation: 'create'
+			});
 		});
 
 		it('gives up after every check comes back empty', async () => {

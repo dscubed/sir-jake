@@ -3,14 +3,15 @@ import { countWords } from '#lib/domain/words.ts';
 import {
 	UpstreamError,
 	type ApplicantRepository,
+	type ExistingApplication,
 	type FileUploadId,
 	type PageId
 } from './ports.ts';
 
 export interface FakeRepositoryOptions {
-	/** `existsByEmail` always returns `true`. */
+	/** `findByEmail` always finds an application made by someone else (a different submission). */
 	duplicate?: boolean;
-	/** `existsByEmail` throws `UpstreamError`. */
+	/** `findByEmail` throws `UpstreamError`. */
 	upstreamOnCheck?: boolean;
 	/** `uploadResume` throws `UpstreamError`. */
 	upstreamOnUpload?: boolean;
@@ -20,10 +21,10 @@ export interface FakeRepositoryOptions {
 	log?: (message: string) => void;
 }
 
-export type FakeRepositoryCall = 'existsByEmail' | 'uploadResume' | 'create';
+export type FakeRepositoryCall = 'findByEmail' | 'uploadResume' | 'create';
 
 /**
- * In-memory `ApplicantRepository` for unit tests and for running the app locally without Notion
+ * In-memory `ApplicantRepository` for unit tests and for running the app locally without Notion.
  */
 export class FakeApplicantRepository implements ApplicantRepository {
 	/** Created applications, keyed by email. */
@@ -40,10 +41,21 @@ export class FakeApplicantRepository implements ApplicantRepository {
 		this.options = options;
 	}
 
-	async existsByEmail(email: string): Promise<boolean> {
-		this.calls.push('existsByEmail');
-		if (this.options.upstreamOnCheck) throw new UpstreamError('existsByEmail');
-		return this.options.duplicate === true || this.applications.has(email);
+	async findByEmail(email: string): Promise<ExistingApplication | undefined> {
+		this.calls.push('findByEmail');
+		if (this.options.upstreamOnCheck) throw new UpstreamError('findByEmail');
+		const stored = this.applications.get(email);
+		if (stored) {
+			return {
+				pageId: stored.pageId,
+				submissionId: stored.app.submissionId,
+				submittedAt: stored.app.submittedAt
+			};
+		}
+		if (this.options.duplicate) {
+			return { pageId: 'fake-page-other', submissionId: 'someone-else', submittedAt: undefined };
+		}
+		return undefined;
 	}
 
 	async uploadResume(file: ResumeFile): Promise<FileUploadId> {
@@ -59,7 +71,7 @@ export class FakeApplicantRepository implements ApplicantRepository {
 		if (this.options.upstreamOnCreate) throw new UpstreamError('create');
 		if (!this.uploads.has(resume)) throw new Error(`Unknown resume upload: ${resume}`);
 		if (this.applications.has(app.email)) {
-			throw new Error(`An application for ${app.email} already exists; check existsByEmail first`);
+			throw new Error(`An application for ${app.email} already exists; check findByEmail first`);
 		}
 
 		const pageId = `fake-page-${this.nextId++}`;
