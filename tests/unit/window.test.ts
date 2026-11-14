@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { applicationWindow, windowState } from '../../src/lib/domain/window';
+import {
+	applicationWindow,
+	displayStatus,
+	formatMelbourne,
+	windowState
+} from '../../src/lib/domain/window';
 
 const config = { opensAt: '2027-02-20T09:00:00+11:00', closesAt: '2027-03-06T23:59:00+11:00' };
 const window = applicationWindow(config);
@@ -34,5 +39,26 @@ describe('windowState', () => {
 
 	it('is unscheduled without a window', () => {
 		expect(windowState(new Date(), undefined)).toBe('unscheduled');
+	});
+});
+
+describe('displayStatus', () => {
+	it.each([
+		['unscheduled', 'open'],
+		['before', 'upcoming'],
+		['open', 'open'],
+		['after', 'closed']
+	] as const)('shows %s as %s', (state, expected) => {
+		expect(displayStatus(state)).toBe(expected);
+	});
+});
+
+describe('formatMelbourne', () => {
+	it('formats in Melbourne time whatever the machine time zone', () => {
+		expect(formatMelbourne('2027-02-19T22:00:00Z')).toMatch(/^Sat,?\s20\sFeb,?\s9:00\sam$/i);
+	});
+
+	it('keeps TBD for unset dates', () => {
+		expect(formatMelbourne('TBD')).toBe('TBD');
 	});
 });

@@ -13,6 +13,11 @@
 		options: readonly (string | SelectOption)[];
 		/** Lay the options out side by side instead of stacked. */
 		inline?: boolean;
+		/**
+		 * `segmented` shows each option as a 44px button (the handoff's Yes/No style).
+		 * They are still real radio inputs, so arrow keys and form posting work as normal.
+		 */
+		variant?: 'list' | 'segmented';
 	}
 
 	let {
@@ -23,7 +28,8 @@
 		value = $bindable(''),
 		error,
 		options,
-		inline = false
+		inline = false,
+		variant = 'list'
 	}: Props = $props();
 
 	const id = $props.id();
@@ -41,11 +47,11 @@
 		{#if !required}<span class="optional">(optional)</span>{/if}
 	</legend>
 	{#if helpText}<p id="{id}-help" class="help">{helpText}</p>{/if}
-	<div class="options" class:inline>
+	<div class="options {variant}" class:inline={inline || variant === 'segmented'}>
 		{#each normalised as option (option.value)}
-			<label class="option">
+			<label class="option" class:invalid={hasError(error)}>
 				<input type="radio" {name} value={option.value} {required} bind:group={value} />
-				{option.label}
+				<span>{option.label}</span>
 			</label>
 		{/each}
 	</div>
@@ -56,40 +62,92 @@
 	fieldset {
 		border: 0;
 		padding: 0;
-		margin-inline: 0;
+		margin: 0;
 		min-width: 0;
 	}
 
+	/* Legends are not flex items, so they get their own spacing. */
 	legend {
-		padding: 0;
-		font-weight: 600;
+		margin-bottom: 8px;
 	}
 
 	.options {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-2);
-		margin-top: var(--space-2);
 	}
 
 	.options.inline {
 		flex-direction: row;
 		flex-wrap: wrap;
-		gap: var(--space-5);
+		gap: 10px;
 	}
 
-	.option {
+	.list .option {
 		display: inline-flex;
 		align-items: center;
 		gap: var(--space-2);
-		font-weight: 400;
+		min-height: 44px;
+		color: var(--ink);
 		cursor: pointer;
 	}
 
-	.option input {
+	.list .option input {
 		width: 1.125rem;
 		height: 1.125rem;
 		margin: 0;
-		accent-color: var(--color-accent);
+		accent-color: var(--blue);
+	}
+
+	/* Segmented: the radio is hidden but stays focusable; the label is the visible button. */
+	.segmented .option {
+		position: relative;
+		cursor: pointer;
+	}
+
+	.segmented input {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		opacity: 0;
+		cursor: pointer;
+	}
+
+	.segmented span {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 44px;
+		min-width: 96px;
+		padding: 0 18px;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-md);
+		background: #ffffff;
+		color: var(--ink);
+		font-size: 15px;
+		transition:
+			background-color var(--duration-fast) var(--ease-out),
+			border-color var(--duration-fast) var(--ease-out),
+			color var(--duration-fast) var(--ease-out);
+	}
+
+	.segmented .option:hover span {
+		background: var(--hover-light);
+	}
+
+	.segmented .invalid span {
+		border-color: var(--error);
+	}
+
+	.segmented input:checked + span {
+		background: var(--blue);
+		border-color: var(--blue);
+		color: #ffffff;
+	}
+
+	.segmented input:focus-visible + span {
+		box-shadow: 0 0 0 3px rgba(21, 110, 226, 0.35);
 	}
 </style>

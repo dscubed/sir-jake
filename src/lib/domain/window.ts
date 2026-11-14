@@ -29,3 +29,33 @@ export function windowState(now: Date, window: ApplicationWindow | undefined): W
 	if (now >= window.closesAt) return 'after';
 	return 'open';
 }
+
+/** What the landing page and nav show: the buttons go to the form, or to Discord. */
+export type DisplayStatus = 'upcoming' | 'open' | 'closed';
+
+/**
+ * The status the pages display. While the dates are unscheduled ("TBD") the site links to the
+ * form, so the pages work together during development and testing.
+ *
+ * Display only: whether a submission is accepted is always decided by `windowState` on the server.
+ */
+export function displayStatus(state: WindowState): DisplayStatus {
+	if (state === 'before') return 'upcoming';
+	if (state === 'after') return 'closed';
+	return 'open';
+}
+
+const melbourneFormat = new Intl.DateTimeFormat('en-AU', {
+	timeZone: 'Australia/Melbourne',
+	weekday: 'short',
+	day: 'numeric',
+	month: 'short',
+	hour: 'numeric',
+	minute: '2-digit'
+});
+
+/** Formats a config date in Melbourne time, e.g. "Sat, 20 Feb, 9:00 am". Unset dates stay "TBD". */
+export function formatMelbourne(value: string): string {
+	const date = new Date(value);
+	return Number.isNaN(date.getTime()) ? 'TBD' : melbourneFormat.format(date);
+}
