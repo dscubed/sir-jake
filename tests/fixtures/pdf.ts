@@ -4,7 +4,7 @@ import type { ResumeFile } from '../../src/lib/domain/application';
  * A valid one-page PDF, padded with a trailing comment to roughly `sizeBytes` so size limits can be
  * tested without a fixture file.
  */
-export function makePdf(sizeBytes = 0): Uint8Array {
+export function makePdf(sizeBytes = 0): Uint8Array<ArrayBuffer> {
 	const objects = [
 		'<< /Type /Catalog /Pages 2 0 R >>',
 		'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
