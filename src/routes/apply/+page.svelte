@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { enhance, type SubmitFunction } from '$app/forms';
 	import { ApplicationForm } from '#lib/apply/form.svelte.ts';
+	import { DraftStore } from '#lib/apply/draft.svelte.ts';
+	import { outcomeFromResult } from '#lib/apply/outcome.ts';
+	import { firstErrorField } from '#lib/apply/fields.ts';
 	import { sections, type SectionId } from '#lib/apply/progress.ts';
+	import { recruitment } from '#lib/config/recruitment.ts';
 	import type { ApplicationField } from '#lib/domain/application.ts';
 	import ProgressNav from '#lib/components/apply/ProgressNav.svelte';
 	import PersonalDetails from '#lib/components/apply/PersonalDetails.svelte';
@@ -10,16 +15,36 @@
 	import FormSection from '#lib/components/apply/FormSection.svelte';
 	import ResumeInput from '#lib/components/apply/ResumeInput.svelte';
 	import ReviewSubmit from '#lib/components/apply/ReviewSubmit.svelte';
+	import SubmitStatus from '#lib/components/apply/SubmitStatus.svelte';
+	import Turnstile from '#lib/components/apply/Turnstile.svelte';
 
 	const form = new ApplicationForm();
+	const draft = new DraftStore();
 
 	let active = $state<SectionId>('personal');
-	/** Shown when every check passes, until the form action exists (step 2.8). */
-	let notConnected = $state(false);
+	let submitting = $state(false);
+	/** Banner for outcomes that keep the form on screen: captcha, duplicate, upstream (design §8). */
+	let retryMessage = $state<string | null>(null);
+	/** Set once the form is done with: it is replaced by the success or closed screen. */
+	let finished = $state<
+		| {
+				kind: 'success';
+				submittedAt: Date;
+				firstName: string;
+				firstPreference: string;
+				secondPreference: string;
+		  }
+		| { kind: 'closed' }
+		| null
+	>(null);
+
+	let turnstile: Turnstile | undefined = $state();
+	let banner: HTMLDivElement | undefined = $state();
 
 	const errorCount = $derived(Object.keys(form.shownErrors).length);
-	const showBanner = $derived(form.tried && errorCount > 0);
+	const showErrorBanner = $derived(form.tried && errorCount > 0);
 
+	const roleName = (id: string) => recruitment.roles.find((r) => r.id === id)?.name ?? id;
 	const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 	function goToSection(id: SectionId) {
@@ -37,28 +62,91 @@
 		el?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'center' });
 	}
 
-	async function onsubmit(event: SubmitEvent) {
-		// Until ApplicationService and the form action land (steps 2.7–2.8) there is nowhere to post to,
-		// so the browser never submits. The next slice switches this to `use:enhance`.
-		event.preventDefault();
-		const firstError = form.attemptSubmit();
+	async function showRetry(message: string) {
+		retryMessage = message;
 		await tick();
-		if (firstError) {
-			notConnected = false;
-			focusField(firstError);
-		} else {
-			notConnected = true;
-		}
+		banner?.focus();
+		banner?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'center' });
 	}
+
+	/**
+	 * Progressive enhancement of the form post (design §8). The browser checks run first, so a
+	 * submission with mistakes never leaves the page. Every failure keeps the applicant's answers.
+	 */
+	const submitApplication: SubmitFunction = ({ cancel }) => {
+		retryMessage = null;
+		const firstError = form.attemptSubmit();
+		if (firstError) {
+			cancel();
+			tick().then(() => focusField(firstError));
+			return;
+		}
+		submitting = true;
+
+		return async ({ result }) => {
+			submitting = false;
+			const outcome = outcomeFromResult(result);
+
+			if (outcome.kind === 'success') {
+				const { fullName, firstPreference, secondPreference } = form.values;
+				draft.clear();
+				finished = {
+					kind: 'success',
+					submittedAt: outcome.submittedAt,
+					firstName: fullName.trim().split(/\s+/)[0] || 'there',
+					firstPreference: roleName(firstPreference),
+					secondPreference: roleName(secondPreference)
+				};
+				scrollTo({ top: 0 });
+				return;
+			}
+
+			if (outcome.kind === 'closed') {
+				finished = { kind: 'closed' };
+				scrollTo({ top: 0 });
+				return;
+			}
+
+			// A Turnstile token can only be verified once, so every retry needs a fresh check.
+			turnstile?.reset();
+
+			if (outcome.kind === 'invalid') {
+				form.setServerErrors(outcome.fieldErrors);
+				await tick();
+				const field = firstErrorField(form.shownErrors);
+				if (field) focusField(field);
+				return;
+			}
+
+			await showRetry(outcome.message);
+		};
+	};
 
 	function clearForm() {
 		form.clear();
-		notConnected = false;
+		draft.clear();
+		retryMessage = null;
+		turnstile?.reset();
 	}
+
+	// Draft autosave (step 3.5): restore once in the browser, then save (debounced) on every change.
+	let restored = false;
+	$effect(() => {
+		const values = $state.snapshot(form.values);
+		if (!restored) {
+			restored = true;
+			const saved = draft.load();
+			if (saved) form.restore(saved);
+			return;
+		}
+		draft.schedule(values);
+	});
+	$effect(() => () => draft.cancel());
 
 	// Scroll-spy for the progress menu: the section whose top is within 200px of the top of the
 	// viewport, or the last section once the page is scrolled to the bottom.
 	$effect(() => {
+		if (finished) return;
 		let frame = 0;
 		const update = () => {
 			frame = 0;
@@ -94,44 +182,52 @@
 	</div>
 </section>
 
-<div class="layout">
-	<ProgressNav
-		sections={form.progress.sections}
-		doneCount={form.progress.doneCount}
-		total={form.progress.total}
-		{active}
-		saveNote="Drafts save automatically"
-		ongo={goToSection}
-	/>
+{#if finished}
+	<SubmitStatus {...finished} />
+{:else}
+	<div class="layout">
+		<ProgressNav
+			sections={form.progress.sections}
+			doneCount={form.progress.doneCount}
+			total={form.progress.total}
+			{active}
+			saveNote={draft.note}
+			ongo={goToSection}
+		/>
 
-	<form
-		id="application"
-		method="POST"
-		enctype="multipart/form-data"
-		novalidate
-		aria-labelledby="apply-title"
-		{onsubmit}
-	>
-		{#if showBanner}
-			<div class="banner error" role="alert">
-				Please fix {errorCount === 1 ? '1 field' : `${errorCount} fields`} before submitting.
-			</div>
-		{:else if notConnected}
-			<div class="banner info" role="status">
-				Everything looks good. Sending applications is switched on in a later step, so nothing was
-				submitted.
-			</div>
-		{/if}
+		<form
+			id="application"
+			method="POST"
+			enctype="multipart/form-data"
+			novalidate
+			aria-labelledby="apply-title"
+			aria-busy={submitting}
+			use:enhance={submitApplication}
+		>
+			{#if retryMessage}
+				<div class="banner" role="alert" tabindex="-1" bind:this={banner}>
+					{retryMessage}
+				</div>
+			{:else if showErrorBanner}
+				<div class="banner" role="alert">
+					Please fix {errorCount === 1 ? '1 field' : `${errorCount} fields`} before submitting.
+				</div>
+			{/if}
 
-		<PersonalDetails {form} />
-		<RolePreferences {form} />
-		<Questions {form} />
-		<FormSection id="resume" title="Resume" gap={14}>
-			<ResumeInput bind:file={form.resume} error={form.shownErrors.resume} />
-		</FormSection>
-		<ReviewSubmit saveNote="Drafts save automatically" onclear={clearForm} />
-	</form>
-</div>
+			<PersonalDetails {form} />
+			<RolePreferences {form} />
+			<Questions {form} />
+			<FormSection id="resume" title="Resume" gap={14}>
+				<ResumeInput bind:file={form.resume} error={form.shownErrors.resume} />
+			</FormSection>
+			<ReviewSubmit {submitting} saveNote={draft.note} onclear={clearForm}>
+				{#snippet captcha()}
+					<Turnstile bind:this={turnstile} />
+				{/snippet}
+			</ReviewSubmit>
+		</form>
+	</div>
+{/if}
 
 <style>
 	.hero {
@@ -183,21 +279,16 @@
 
 	.banner {
 		padding: 16px 18px;
+		border: 1px solid var(--error);
 		border-radius: var(--radius-lg);
+		background: var(--error-bg);
+		color: var(--error-text);
 		font-size: 15px;
 		line-height: 1.5;
 	}
 
-	.banner.error {
-		border: 1px solid var(--error);
-		background: var(--error-bg);
-		color: var(--error-text);
-	}
-
-	.banner.info {
-		border: 1px solid var(--border);
-		background: var(--surface-light);
-		color: var(--ink-2);
+	.banner:focus {
+		outline: none;
 	}
 
 	@media (max-width: 899px) {

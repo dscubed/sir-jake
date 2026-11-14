@@ -32,11 +32,23 @@ export class ApplicationForm {
 	/** Every current problem, whether or not it is shown yet. */
 	readonly errors: FormErrors = $derived(validateForm(this.values, this.resume));
 
+	/**
+	 * Errors the server returned (design §8 `invalid`), with the value each was about. A server
+	 * error disappears as soon as the applicant changes that field.
+	 */
+	serverErrors = $state<Partial<Record<ApplicationField, { message: string; value: unknown }>>>({});
+
 	/** Errors to show beside fields. The resume's type and size are flagged as soon as a file is picked. */
 	readonly shownErrors: FormErrors = $derived.by(() => {
-		if (this.tried) return this.errors;
+		const shown: FormErrors = {};
+		for (const [field, entry] of Object.entries(this.serverErrors)) {
+			const key = field as ApplicationField;
+			const current = key === 'resume' ? this.resume : this.values[key];
+			if (entry && entry.value === current) shown[key] = entry.message;
+		}
+		if (this.tried) return { ...shown, ...this.errors };
 		const resumeError = this.resume ? fieldError('resume', this.resume) : undefined;
-		return resumeError ? { resume: resumeError } : {};
+		return resumeError ? { ...shown, resume: resumeError } : shown;
 	});
 
 	readonly progress = $derived(sectionProgress(this.values, this.errors, this.tried));
@@ -81,9 +93,32 @@ export class ApplicationForm {
 		return firstErrorField(this.errors);
 	}
 
+	/** Shows the server's field errors beside the fields they belong to. */
+	setServerErrors(errors: FormErrors) {
+		const entries: typeof this.serverErrors = {};
+		for (const [field, message] of Object.entries(errors)) {
+			const key = field as ApplicationField;
+			if (message) {
+				entries[key] = { message, value: key === 'resume' ? this.resume : this.values[key] };
+			}
+		}
+		this.serverErrors = entries;
+		this.tried = true;
+	}
+
+	/** Fills the form from a saved draft (step 3.5). */
+	restore(draft: Partial<FormValues>) {
+		this.values = { ...emptyValues(), ...draft };
+		// A draft could hold the same team twice if the config changed since it was saved.
+		if (this.values.secondPreference === this.values.firstPreference) {
+			this.values.secondPreference = '';
+		}
+	}
+
 	clear() {
 		this.values = emptyValues();
 		this.resume = null;
 		this.tried = false;
+		this.serverErrors = {};
 	}
 }

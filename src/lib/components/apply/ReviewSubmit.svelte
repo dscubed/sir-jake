@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import FormSection from './FormSection.svelte';
 
 	interface Props {
@@ -6,9 +7,11 @@
 		/** "Drafts save automatically" or "Draft saved at 3:41 pm". */
 		saveNote: string;
 		onclear: () => void;
+		/** The Turnstile widget and honeypot (step 3.7). */
+		captcha: Snippet;
 	}
 
-	let { submitting = false, saveNote, onclear }: Props = $props();
+	let { submitting = false, saveNote, onclear, captcha }: Props = $props();
 </script>
 
 <FormSection id="submit" title="Review and submit" gap={20}>
@@ -23,8 +26,7 @@
 		</p>
 	</div>
 
-	<!-- Placeholder until the Turnstile widget and honeypot land (step 3.7). -->
-	<div class="captcha-placeholder" aria-hidden="true">Verification check</div>
+	{@render captcha()}
 
 	<div class="actions">
 		<button type="submit" class="submit" disabled={submitting} aria-disabled={submitting}>
@@ -52,18 +54,6 @@
 		font-weight: 500;
 		line-height: var(--leading-relaxed);
 		color: var(--ink);
-	}
-
-	.captcha-placeholder {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		max-width: 300px;
-		height: 65px;
-		border: 1px dashed var(--border);
-		border-radius: 8px;
-		font-size: var(--text-xs);
-		color: var(--placeholder);
 	}
 
 	.actions {
