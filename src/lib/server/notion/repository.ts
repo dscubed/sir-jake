@@ -1,12 +1,13 @@
 import { Client } from '@notionhq/client';
 import type { RecruitmentConfig } from '#lib/config/types.ts';
-import type { ResumeFile } from '#lib/domain/application.ts';
+import type { Application, ResumeFile } from '#lib/domain/application.ts';
 import {
 	UpstreamError,
 	type ApplicantRepository,
 	type FileUploadId,
 	type PageId
 } from '#lib/server/ports.ts';
+import { children, properties } from './pageBuilder.ts';
 import { PROP } from './properties.ts';
 
 /** The data-source endpoints this repository uses need at least this API version. */
@@ -73,7 +74,16 @@ export class NotionApplicantRepository implements ApplicantRepository {
 		}
 	}
 
-	async create(): Promise<PageId> {
-		throw new Error('Not implemented');
+	async create(app: Application, resume: FileUploadId): Promise<PageId> {
+		try {
+			const page = await this.client.pages.create({
+				parent: { type: 'data_source_id', data_source_id: this.dataSourceId },
+				properties: properties(app, resume, this.config),
+				children: children(app, this.config)
+			});
+			return page.id;
+		} catch (cause) {
+			throw new UpstreamError('create', { cause });
+		}
 	}
 }
