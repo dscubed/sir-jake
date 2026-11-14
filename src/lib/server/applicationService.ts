@@ -6,6 +6,7 @@ import type {
 	SubmitResult
 } from '#lib/domain/application.ts';
 import { parseApplicationForm, type ApplicationInput } from '#lib/domain/schema.ts';
+import { isSubmissionId, SUBMISSION_ID_FIELD } from '#lib/domain/submissionId.ts';
 import { applicationWindow, windowState, type ApplicationWindow } from '#lib/domain/window.ts';
 import {
 	UpstreamError,
@@ -24,6 +25,8 @@ export interface SubmissionLog {
 	durationMs: number;
 	/** Which repository call failed, for `upstream` outcomes. */
 	step?: UpstreamError['operation'];
+	/** For `ok`: an earlier attempt with the same submission ID had already created the page. */
+	alreadyCreated?: true;
 }
 
 export interface ApplicationServiceOptions {
@@ -64,15 +67,18 @@ export class ApplicationService {
 	 */
 	async submit(form: FormData, ip: string): Promise<SubmitResult> {
 		const started = performance.now();
-		const submissionId = crypto.randomUUID();
+		const submitted = form.get(SUBMISSION_ID_FIELD);
+		const submissionId = isSubmissionId(submitted) ? submitted : crypto.randomUUID();
 		let step: UpstreamError['operation'] | undefined;
+		let alreadyCreated = false;
 
 		const finish = (result: SubmitResult): SubmitResult => {
 			this.log({
 				submissionId,
 				outcome: result.ok ? 'ok' : result.reason,
 				durationMs: Math.round(performance.now() - started),
-				...(step && !result.ok && result.reason === 'upstream' ? { step } : {})
+				...(step && !result.ok && result.reason === 'upstream' ? { step } : {}),
+				...(alreadyCreated ? { alreadyCreated } : {})
 			});
 			return result;
 		};
@@ -103,8 +109,19 @@ export class ApplicationService {
 
 			const app = toApplication(parsed.data, resume, submissionId, now);
 
-			step = 'existsByEmail';
-			if (await this.repo.existsByEmail(app.email)) {
+			step = 'findByEmail';
+			const existing = await this.repo.findByEmail(app.email);
+			if (existing) {
+				// The same submission ID means this applicant's earlier attempt already went through,
+				// even though they never saw it succeed. Report that success instead of a duplicate.
+				if (existing.submissionId === submissionId) {
+					alreadyCreated = true;
+					return finish({
+						ok: true,
+						pageId: existing.pageId,
+						submittedAt: existing.submittedAt ?? now
+					});
+				}
 				return finish({ ok: false, reason: 'duplicate' });
 			}
 			step = 'uploadResume';

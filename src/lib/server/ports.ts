@@ -6,13 +6,21 @@ export type FileUploadId = string;
 /** ID of a created Notion page. */
 export type PageId = string;
 
+/** An application that is already stored. */
+export interface ExistingApplication {
+	pageId: PageId;
+	/** Missing only if someone cleared it by hand in Notion. */
+	submissionId: string | undefined;
+	submittedAt: Date | undefined;
+}
+
 /**
  * Thrown by an `ApplicantRepository` when Notion still fails after the repository's own retries.
  * Callers should treat it as a temporary failure: nothing was created, and the applicant can retry.
  */
 export class UpstreamError extends Error {
 	/** Which repository call failed. Safe to log; never contains applicant data. */
-	readonly operation: 'existsByEmail' | 'uploadResume' | 'create';
+	readonly operation: 'findByEmail' | 'uploadResume' | 'create';
 
 	constructor(operation: UpstreamError['operation'], options?: { cause?: unknown }) {
 		super(`Notion ${operation} failed after retries`, options);
@@ -24,11 +32,12 @@ export class UpstreamError extends Error {
 /** Where applications are stored. Implemented by the Notion repository and an in-memory fake. */
 export interface ApplicantRepository {
 	/**
-	 * Whether an application with this email already exists.
+	 * The application already stored for this email, if any.
 	 * @param email Already trimmed and lowercased.
+	 * @returns `undefined` if there is none.
 	 * @throws {UpstreamError} if Notion fails after retries.
 	 */
-	existsByEmail(email: string): Promise<boolean>;
+	findByEmail(email: string): Promise<ExistingApplication | undefined>;
 
 	/**
 	 * Uploads the resume so it can be attached to the page. An upload that is never attached is

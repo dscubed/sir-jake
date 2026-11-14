@@ -80,7 +80,7 @@ describe('ApplicationService.submit', () => {
 			pageId: expect.stringMatching(/^fake-page-/),
 			submittedAt: DURING
 		});
-		expect(repo.calls).toEqual(['existsByEmail', 'uploadResume', 'create']);
+		expect(repo.calls).toEqual(['findByEmail', 'uploadResume', 'create']);
 		expect(captcha.verify).toHaveBeenCalledWith('token-ok', IP);
 
 		const stored = repo.applications.get('ada@student.unimelb.edu.au')?.app;
@@ -112,6 +112,53 @@ describe('ApplicationService.submit', () => {
 		await service.submit(validForm({ email: 'a@x.edu' }), IP);
 		await service.submit(validForm({ email: 'b@x.edu' }), IP);
 		expect(logs[0].submissionId).not.toBe(logs[1].submissionId);
+	});
+
+	describe('submission id from the form', () => {
+		it('is used for the application and the log when valid', async () => {
+			const { service, repo, logs } = setup();
+			const id = crypto.randomUUID();
+			await service.submit(validForm({ submissionId: id }), IP);
+			expect(repo.applications.get('ada@student.unimelb.edu.au')?.app.submissionId).toBe(id);
+			expect(logs[0].submissionId).toBe(id);
+		});
+
+		it('is replaced with a fresh one when it is not a valid id', async () => {
+			const { service, logs } = setup();
+			await service.submit(validForm({ submissionId: 'not-a-uuid' }), IP);
+			expect(logs[0].submissionId).not.toBe('not-a-uuid');
+			expect(logs[0].submissionId).toMatch(/^[0-9a-f-]{36}$/);
+		});
+
+		it("reports success when the applicant's earlier attempt already went through", async () => {
+			const firstTry = new Date('2027-03-01T12:00:00+11:00');
+			const { service, repo, logs } = setup({ now: firstTry });
+			const id = crypto.randomUUID();
+			const first = await service.submit(validForm({ submissionId: id }), IP);
+			repo.calls.length = 0;
+
+			const retry = await service.submit(validForm({ submissionId: id }), IP);
+
+			expect(first.ok && retry.ok && retry.pageId).toBe(first.ok && first.pageId);
+			expect(retry).toMatchObject({ ok: true, submittedAt: firstTry });
+			expect(repo.calls).toEqual(['findByEmail']);
+			expect(repo.applications.size).toBe(1);
+			expect(logs[1]).toMatchObject({ outcome: 'ok', alreadyCreated: true });
+		});
+
+		it('still returns duplicate for the same email with a different id', async () => {
+			const { service } = setup();
+			await service.submit(validForm({ submissionId: crypto.randomUUID() }), IP);
+			const other = await service.submit(validForm({ submissionId: crypto.randomUUID() }), IP);
+			expect(other).toEqual({ ok: false, reason: 'duplicate' });
+		});
+
+		it('returns duplicate when the earlier attempt sent no id', async () => {
+			const { service } = setup();
+			await service.submit(validForm(), IP);
+			const again = await service.submit(validForm({ submissionId: crypto.randomUUID() }), IP);
+			expect(again).toEqual({ ok: false, reason: 'duplicate' });
+		});
 	});
 
 	describe('closed', () => {
@@ -187,7 +234,7 @@ describe('ApplicationService.submit', () => {
 	it('returns duplicate without uploading anything', async () => {
 		const { service, repo } = setup({ repo: { duplicate: true } });
 		expect(await service.submit(validForm(), IP)).toEqual({ ok: false, reason: 'duplicate' });
-		expect(repo.calls).toEqual(['existsByEmail']);
+		expect(repo.calls).toEqual(['findByEmail']);
 		expect(repo.uploads.size).toBe(0);
 	});
 
@@ -200,7 +247,7 @@ describe('ApplicationService.submit', () => {
 
 	describe('upstream', () => {
 		it.each([
-			['upstreamOnCheck', 'existsByEmail'],
+			['upstreamOnCheck', 'findByEmail'],
 			['upstreamOnUpload', 'uploadResume'],
 			['upstreamOnCreate', 'create']
 		] as const)('when %s, logging the failed step', async (option, step) => {
@@ -212,7 +259,7 @@ describe('ApplicationService.submit', () => {
 
 		it('never throws, even on an unexpected error', async () => {
 			const { service, repo } = setup();
-			vi.spyOn(repo, 'existsByEmail').mockRejectedValue(new TypeError('bug'));
+			vi.spyOn(repo, 'findByEmail').mockRejectedValue(new TypeError('bug'));
 			const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 			expect(await service.submit(validForm(), IP)).toEqual({ ok: false, reason: 'upstream' });
 			expect(error).toHaveBeenCalledTimes(1);

@@ -1,9 +1,10 @@
-import { Client } from '@notionhq/client';
+import { Client, isFullPage, type PageObjectResponse } from '@notionhq/client';
 import type { RecruitmentConfig } from '#lib/config/types.ts';
 import type { Application, ResumeFile } from '#lib/domain/application.ts';
 import {
 	UpstreamError,
 	type ApplicantRepository,
+	type ExistingApplication,
 	type FileUploadId,
 	type PageId
 } from '#lib/server/ports.ts';
@@ -56,27 +57,27 @@ export class NotionApplicantRepository implements ApplicantRepository {
 		this.retry = { ...defaultRetryPolicy, ...retry };
 	}
 
-	async existsByEmail(email: string): Promise<boolean> {
+	/** Reads are safe to repeat, so any rejected or uncertain failure is retried. */
+	async findByEmail(email: string): Promise<ExistingApplication | undefined> {
 		try {
-			return (await this.findPageId(email)) !== undefined;
+			return await withRetry(() => this.queryByEmail(email), ['rejected', 'unknown'], this.retry);
 		} catch (cause) {
-			throw new UpstreamError('existsByEmail', { cause });
+			throw new UpstreamError('findByEmail', { cause });
 		}
 	}
 
-	/** Reads are safe to repeat, so any rejected or uncertain failure is retried. */
-	private findPageId(email: string): Promise<PageId | undefined> {
-		return withRetry(() => this.queryPageId(email), ['rejected', 'unknown'], this.retry);
-	}
-
-	private async queryPageId(email: string): Promise<PageId | undefined> {
+	private async queryByEmail(email: string): Promise<ExistingApplication | undefined> {
 		const response = await this.client.dataSources.query({
 			data_source_id: this.dataSourceId,
 			filter: { property: PROP.email, email: { equals: email } },
 			page_size: 1,
 			result_type: 'page'
 		});
-		return response.results[0]?.id;
+		const page = response.results[0];
+		if (!page) return undefined;
+		return isFullPage(page)
+			? toExisting(page)
+			: { pageId: page.id, submissionId: undefined, submittedAt: undefined };
 	}
 
 	/**
@@ -131,7 +132,7 @@ export class NotionApplicantRepository implements ApplicantRepository {
 			);
 		} catch (cause) {
 			if (classify(cause) !== 'unknown') throw new UpstreamError('create', { cause });
-			const existing = await this.findCreatedPage(app.email);
+			const existing = await this.findCreatedPage(app);
 			if (existing) return existing;
 			throw new UpstreamError('create', { cause });
 		}
@@ -139,19 +140,35 @@ export class NotionApplicantRepository implements ApplicantRepository {
 
 	/**
 	 * Looks for a page that a failed `create` may have made. Notion's query can take a moment to
-	 * include a new page, so this checks several times and stops at the first match. A check that
-	 * fails is skipped rather than retried, to keep the total wait short.
+	 * include a new page, so this checks several times and stops at the first page for the email.
+	 * It counts only if its submission ID matches this attempt's. A check that fails is skipped
+	 * rather than retried, to keep the total wait short.
 	 */
-	private async findCreatedPage(email: string): Promise<PageId | undefined> {
+	private async findCreatedPage(app: Application): Promise<PageId | undefined> {
 		for (const delay of CONFIRM_CREATE_DELAYS_MS) {
 			await this.retry.sleep(delay);
 			try {
-				const id = await this.queryPageId(email);
-				if (id) return id;
+				const existing = await this.queryByEmail(app.email);
+				// A page with another submission ID was made by a different attempt, not this one.
+				if (existing)
+					return existing.submissionId === app.submissionId ? existing.pageId : undefined;
 			} catch {
 				// Try again after the next delay.
 			}
 		}
 		return undefined;
 	}
+}
+
+function toExisting(page: PageObjectResponse): ExistingApplication {
+	const id = page.properties[PROP.submissionId];
+	const date = page.properties[PROP.submittedAt];
+	const submissionId =
+		id?.type === 'rich_text' ? id.rich_text.map((t) => t.plain_text).join('') : undefined;
+	const start = date?.type === 'date' ? date.date?.start : undefined;
+	return {
+		pageId: page.id,
+		submissionId: submissionId || undefined,
+		submittedAt: start ? new Date(start) : undefined
+	};
 }
