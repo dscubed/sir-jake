@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import adapter from '@sveltejs/adapter-vercel';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { loadEnv } from 'vite';
 
 export default defineConfig({
 	plugins: [
@@ -30,13 +31,16 @@ export default defineConfig({
 				}
 			},
 			{
-				// `pnpm test:notion`: runs against the TEST Notion database with a local .env.
-				// Not run in CI. Filled in at step 2.4.
+				// `pnpm test:notion`: runs against the TEST Notion database using the local .env.
+				// Not run in CI.
 				extends: './vite.config.ts',
 				test: {
 					name: 'notion',
 					environment: 'node',
-					include: ['tests/integration/**/*.{test,spec}.{js,ts}']
+					include: ['tests/integration/**/*.{test,spec}.{js,ts}'],
+					env: loadEnv('test', process.cwd(), ''),
+					testTimeout: 30_000,
+					hookTimeout: 30_000
 				}
 			}
 		]
