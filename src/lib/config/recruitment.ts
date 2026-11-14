@@ -36,10 +36,16 @@ export const recruitment = {
 			'Events',
 			'From game show nights to the Inter-Uni Datathon, you’ll turn ideas into events hundreds of students show up for, and be there on the night making it happen.'
 		),
+		// Marketing is split into two teams: Graphics (posters and design) and Media (reels and short-form content).
 		placeholderRole(
-			'marketing',
-			'Marketing',
-			'Every poster, reel and post students see starts with you. You’ll design, write and experiment to get more students through the door.'
+			'graphics',
+			'Graphics',
+			'Every poster and post students see starts with you. You’ll design the artwork and visual identity that get students through the door and end up all over campus.'
+		),
+		placeholderRole(
+			'media',
+			'Media',
+			'Bring DSCubed to life on camera. You’ll script, shoot and edit the reels and short-form videos that show students what the club is really like.'
 		),
 		placeholderRole(
 			'hr',
@@ -60,8 +66,6 @@ export const recruitment = {
 			'products',
 			'Products',
 			'Build and improve the tech behind DSCubed, from our website to the Visualiser and student projects, in a small team that ships.'
-		),
-		// Not in the design handoff, which lists six teams. Kept until the committee confirms.
-		placeholderRole('media', 'Media', 'Create photos, videos and graphics for DSCubed.')
+		)
 	]
 } satisfies RecruitmentConfig;
