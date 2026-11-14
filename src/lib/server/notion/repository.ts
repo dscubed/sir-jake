@@ -1,4 +1,4 @@
-import { Client, isFullPage, type PageObjectResponse } from '@notionhq/client';
+import type { PageObjectResponse } from '@notionhq/client';
 import type { RecruitmentConfig } from '#lib/config/types.ts';
 import type { Application, ResumeFile } from '#lib/domain/application.ts';
 import {
@@ -10,6 +10,7 @@ import {
 } from '#lib/server/ports.ts';
 import { children, properties } from './pageBuilder.ts';
 import { PROP } from './properties.ts';
+import { Client, isFullPage } from './sdk.ts';
 import { classify, defaultRetryPolicy, withRetry, type RetryPolicy } from './retry.ts';
 
 /** The data-source endpoints this repository uses need at least this API version. */
