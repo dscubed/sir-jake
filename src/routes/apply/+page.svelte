@@ -292,6 +292,11 @@
 	}
 
 	@media (max-width: 899px) {
+		/* Keeps focused fields clear of the sticky nav and progress bar (WCAG 2.4.11). */
+		:global(html:has(#application)) {
+			scroll-padding-top: 140px;
+		}
+
 		.hero {
 			margin-bottom: 0;
 		}

@@ -16,7 +16,13 @@
 	<div class="bar">
 		<div class="brand">
 			<img src={logoBlue} alt="" width="24" height="28" />
-			<span class="wordmark"><span class="ds">DS</span>CUBED</span>
+			<!--
+				The wordmark is the brand logo, read as one name. Logotypes are exempt from WCAG 1.4.3
+				contrast; automated checks (step 4.2) exclude [data-logo] for that reason.
+			-->
+			<span class="wordmark" role="img" aria-label={site.name} data-logo>
+				<span aria-hidden="true"><span class="ds">DS</span>CUBED</span>
+			</span>
 		</div>
 		<address>{site.address}</address>
 		<a class="discord" href={site.discordUrl} target="_blank" rel="noopener noreferrer">

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import CollectionNotice from './CollectionNotice.svelte';
 	import FormSection from './FormSection.svelte';
 
 	interface Props {
@@ -15,16 +16,7 @@
 </script>
 
 <FormSection id="submit" title="Review and submit" gap={20}>
-	<!-- Wording to be confirmed by the committee (step 3.10). -->
-	<div class="notice">
-		<h3>Collection notice</h3>
-		<p>
-			DSCubed collects your name, student email, degree, availability, answers and resume to assess
-			your application. Only committee members involved in recruitment can see it. Unsuccessful
-			applications are deleted after the recruitment round. To ask for your data to be deleted
-			sooner, message us on Discord.
-		</p>
-	</div>
+	<CollectionNotice />
 
 	{@render captcha()}
 
@@ -40,22 +32,6 @@
 </FormSection>
 
 <style>
-	.notice {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-		font-size: var(--text-sm);
-		line-height: var(--leading-relaxed);
-		color: var(--muted);
-	}
-
-	h3 {
-		font-size: var(--text-sm);
-		font-weight: 500;
-		line-height: var(--leading-relaxed);
-		color: var(--ink);
-	}
-
 	.actions {
 		display: flex;
 		flex-wrap: wrap;

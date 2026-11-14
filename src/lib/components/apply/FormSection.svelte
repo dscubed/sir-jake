@@ -17,7 +17,8 @@
 
 <!-- tabindex lets the progress menu move keyboard focus to the section it scrolls to. -->
 <fieldset {id} class="form-section" tabindex="-1" style:--gap="{gap}px">
-	<legend>{title}</legend>
+	<!-- The h2 makes each section reachable by heading navigation; the legend names the group. -->
+	<legend><h2>{title}</h2></legend>
 	{#if intro}<p class="intro">{@render intro()}</p>{/if}
 	{@render children()}
 </fieldset>
@@ -42,8 +43,12 @@
 	legend {
 		margin-bottom: 22px;
 		padding: 0;
+	}
+
+	h2 {
 		font-size: var(--text-xl);
 		font-weight: 500;
+		line-height: var(--leading-heading);
 		color: var(--ink);
 	}
 
