@@ -1,6 +1,6 @@
 import { dev } from '$app/env';
 import { recruitment } from '#lib/config/recruitment.ts';
-import { windowStatus, type WindowStatus } from '#lib/domain/window.ts';
+import { displayStatus, type WindowStatus } from '#lib/domain/window.ts';
 
 const statuses: readonly WindowStatus[] = ['upcoming', 'open', 'closed'];
 
@@ -10,7 +10,7 @@ function statusNow(): WindowStatus {
 		const override = new URLSearchParams(location.search).get('window');
 		if (statuses.includes(override as WindowStatus)) return override as WindowStatus;
 	}
-	return windowStatus(recruitment, new Date());
+	return displayStatus(recruitment, new Date());
 }
 
 /**

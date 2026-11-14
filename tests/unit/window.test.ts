@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { formatMelbourne, parseConfigDate, windowStatus } from '../../src/lib/domain/window';
+import {
+	displayStatus,
+	formatMelbourne,
+	parseConfigDate,
+	windowStatus
+} from '../../src/lib/domain/window';
 
 const dates = { opensAt: '2027-02-20T09:00:00+11:00', closesAt: '2027-03-06T23:59:00+11:00' };
 const at = (iso: string) => new Date(iso);
@@ -36,6 +41,20 @@ describe('windowStatus', () => {
 	it('compares instants, not wall-clock times, across time zones', () => {
 		// 22:00 UTC on 19 Feb is 09:00 on 20 Feb in Melbourne (AEDT, +11:00).
 		expect(windowStatus(dates, at('2027-02-19T22:00:00Z'))).toBe('open');
+	});
+});
+
+describe('displayStatus', () => {
+	it('links to the form while the opening date is unconfirmed', () => {
+		expect(displayStatus({ opensAt: 'TBD', closesAt: 'TBD' }, at('2030-01-01T00:00:00Z'))).toBe(
+			'open'
+		);
+	});
+
+	it('follows the real window once dates are set', () => {
+		expect(displayStatus(dates, at('2027-02-20T08:59:59+11:00'))).toBe('upcoming');
+		expect(displayStatus(dates, at('2027-02-20T09:00:00+11:00'))).toBe('open');
+		expect(displayStatus(dates, at('2027-03-06T23:59:00+11:00'))).toBe('closed');
 	});
 });
 

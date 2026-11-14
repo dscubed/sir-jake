@@ -6,7 +6,6 @@
 	import { outcomeFromResult } from '#lib/apply/outcome.ts';
 	import { firstErrorField } from '#lib/apply/fields.ts';
 	import { sections, type SectionId } from '#lib/apply/progress.ts';
-	import { recruitment } from '#lib/config/recruitment.ts';
 	import type { ApplicationField } from '#lib/domain/application.ts';
 	import ProgressNav from '#lib/components/apply/ProgressNav.svelte';
 	import PersonalDetails from '#lib/components/apply/PersonalDetails.svelte';
@@ -26,17 +25,7 @@
 	/** Banner for outcomes that keep the form on screen: captcha, duplicate, upstream (design §8). */
 	let retryMessage = $state<string | null>(null);
 	/** Set once the form is done with: it is replaced by the success or closed screen. */
-	let finished = $state<
-		| {
-				kind: 'success';
-				submittedAt: Date;
-				firstName: string;
-				firstPreference: string;
-				secondPreference: string;
-		  }
-		| { kind: 'closed' }
-		| null
-	>(null);
+	let finished = $state<'success' | 'closed' | null>(null);
 
 	let turnstile: Turnstile | undefined = $state();
 	let banner: HTMLDivElement | undefined = $state();
@@ -44,7 +33,6 @@
 	const errorCount = $derived(Object.keys(form.shownErrors).length);
 	const showErrorBanner = $derived(form.tried && errorCount > 0);
 
-	const roleName = (id: string) => recruitment.roles.find((r) => r.id === id)?.name ?? id;
 	const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 	function goToSection(id: SectionId) {
@@ -88,21 +76,14 @@
 			const outcome = outcomeFromResult(result);
 
 			if (outcome.kind === 'success') {
-				const { fullName, firstPreference, secondPreference } = form.values;
 				draft.clear();
-				finished = {
-					kind: 'success',
-					submittedAt: outcome.submittedAt,
-					firstName: fullName.trim().split(/\s+/)[0] || 'there',
-					firstPreference: roleName(firstPreference),
-					secondPreference: roleName(secondPreference)
-				};
+				finished = 'success';
 				scrollTo({ top: 0 });
 				return;
 			}
 
 			if (outcome.kind === 'closed') {
-				finished = { kind: 'closed' };
+				finished = 'closed';
 				scrollTo({ top: 0 });
 				return;
 			}
@@ -183,7 +164,7 @@
 </section>
 
 {#if finished}
-	<SubmitStatus {...finished} />
+	<SubmitStatus kind={finished} />
 {:else}
 	<div class="layout">
 		<ProgressNav

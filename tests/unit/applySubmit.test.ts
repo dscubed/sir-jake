@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ActionResult } from '$app/forms';
 import { isBlank, parseDraft } from '../../src/lib/apply/draft';
 import { emptyValues } from '../../src/lib/apply/fields';
-import { formatSubmittedAt, outcomeFromResult, outcomeMessages } from '../../src/lib/apply/outcome';
+import { outcomeFromResult, outcomeMessages } from '../../src/lib/apply/outcome';
 
 describe('parseDraft', () => {
 	it('restores known text fields', () => {
@@ -101,13 +101,5 @@ describe('outcomeFromResult (design §8)', () => {
 		expect(outcomeFromResult(failure(400, { reason: 'mystery' }))).toMatchObject({
 			reason: 'upstream'
 		});
-	});
-});
-
-describe('formatSubmittedAt', () => {
-	it('uses Melbourne time', () => {
-		expect(formatSubmittedAt(new Date('2027-02-19T22:00:00Z'))).toMatch(
-			/^20 February 2027(,| at) 9:00\sam$/
-		);
 	});
 });

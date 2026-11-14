@@ -1,20 +1,9 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { formatSubmittedAt } from '#lib/apply/outcome.ts';
 	import { site } from '#lib/config/site.ts';
 
 	/** Replaces the form once it is finished with (step 3.6, design §8). */
-	type Props =
-		| {
-				kind: 'success';
-				submittedAt: Date;
-				firstName: string;
-				firstPreference: string;
-				secondPreference: string;
-		  }
-		| { kind: 'closed' };
-
-	let props: Props = $props();
+	let { kind }: { kind: 'success' | 'closed' } = $props();
 
 	let heading: HTMLHeadingElement | undefined = $state();
 
@@ -28,7 +17,7 @@
 <!-- eslint-disable svelte/no-navigation-without-resolve -- the only other link is the external Discord invite. -->
 <div class="status">
 	<div class="card">
-		{#if props.kind === 'success'}
+		{#if kind === 'success'}
 			<span class="tick" aria-hidden="true">
 				<svg viewBox="0 0 16 16" width="20" height="20"
 					><path
@@ -41,27 +30,8 @@
 					/></svg
 				>
 			</span>
-			<h2 bind:this={heading} tabindex="-1">Application received</h2>
-			<p class="lead">
-				Thanks, {props.firstName}. We received your application on
-				{formatSubmittedAt(props.submittedAt)}. A copy of your preferences is below.
-			</p>
-			<dl class="summary">
-				<div>
-					<dt>First preference</dt>
-					<dd>{props.firstPreference}</dd>
-				</div>
-				<div>
-					<dt>Second preference</dt>
-					<dd>{props.secondPreference}</dd>
-				</div>
-			</dl>
-			<p class="muted">
-				If you’re shortlisted, we’ll email you about the group interview. In the meantime, say hi on
-				<a href={site.discordUrl} target="_blank" rel="noopener noreferrer"
-					>Discord<span class="visually-hidden"> (opens in a new tab)</span></a
-				>.
-			</p>
+			<h2 bind:this={heading} tabindex="-1">Thank you for applying</h2>
+			<p class="lead">We wish you the best of luck.</p>
 		{:else}
 			<h2 bind:this={heading} tabindex="-1">Applications are closed</h2>
 			<p class="lead">
@@ -119,37 +89,6 @@
 	.lead {
 		line-height: var(--leading-normal);
 		color: var(--ink-2);
-	}
-
-	.summary {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		margin: 0;
-		padding: 16px 0;
-		border-top: 1px solid var(--divider);
-		border-bottom: 1px solid var(--divider);
-		font-size: 15px;
-	}
-
-	.summary div {
-		display: flex;
-		justify-content: space-between;
-		gap: 16px;
-	}
-
-	dt {
-		color: var(--muted);
-	}
-
-	dd {
-		margin: 0;
-		color: var(--ink);
-	}
-
-	.muted {
-		line-height: var(--leading-normal);
-		color: var(--muted);
 	}
 
 	.actions {

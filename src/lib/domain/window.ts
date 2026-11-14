@@ -27,6 +27,17 @@ export function windowStatus(dates: WindowDates, now: Date): WindowStatus {
 	return 'open';
 }
 
+/**
+ * The status the landing page shows. Until the committee confirms the opening date ("TBD"), the
+ * site links straight to the form so the pages work together during development and testing.
+ * Once real dates are set this is the same as `windowStatus`.
+ *
+ * Only for what the page displays: accepting a submission must use the strict `windowStatus`.
+ */
+export function displayStatus(dates: WindowDates, now: Date): WindowStatus {
+	return parseConfigDate(dates.opensAt) === null ? 'open' : windowStatus(dates, now);
+}
+
 const melbourneFormat = new Intl.DateTimeFormat('en-AU', {
 	timeZone: 'Australia/Melbourne',
 	weekday: 'short',

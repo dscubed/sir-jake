@@ -76,17 +76,3 @@ export function outcomeFromResult(result: ActionResult): Outcome {
 
 	return retry('upstream');
 }
-
-const submittedFormat = new Intl.DateTimeFormat('en-AU', {
-	timeZone: 'Australia/Melbourne',
-	day: 'numeric',
-	month: 'long',
-	year: 'numeric',
-	hour: 'numeric',
-	minute: '2-digit'
-});
-
-/** "14 November 2026 at 7:42 pm", in Melbourne time like the Notion `Submitted at` property. */
-export function formatSubmittedAt(date: Date): string {
-	return submittedFormat.format(date);
-}
