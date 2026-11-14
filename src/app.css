@@ -191,6 +191,65 @@ textarea {
 	padding-inline: var(--gutter);
 }
 
+/* Landing sections: 1140px column with the handoff's responsive padding. */
+.section {
+	max-width: var(--section-width);
+	margin: 0 auto;
+	padding: var(--section-padding) var(--section-gutter);
+}
+
+/* Small uppercase label above a heading on dark backgrounds. */
+.eyebrow {
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--blue-text-dark);
+}
+
+.section-title {
+	font-size: var(--text-h2);
+	line-height: var(--leading-heading);
+	color: var(--text-on-dark);
+	text-wrap: balance;
+}
+
+/* Pill buttons on dark backgrounds (44px tall). */
+.pill-button {
+	height: 44px;
+	display: inline-flex;
+	align-items: center;
+	padding: 0 24px;
+	border-radius: var(--radius-pill);
+	font-size: 15px;
+	font-weight: 500;
+	white-space: nowrap;
+	transition:
+		background-color var(--duration-fast) var(--ease-out),
+		color var(--duration-fast) var(--ease-out);
+}
+
+.pill-button.light {
+	background: var(--text-on-dark);
+	color: var(--bg-dark);
+}
+
+.pill-button.light:hover {
+	background: #ffffff;
+	color: var(--bg-dark);
+}
+
+.pill-button.outline {
+	padding: 0 22px;
+	border: 1px solid var(--outline-on-dark);
+	color: var(--text-on-dark);
+}
+
+.pill-button.outline:hover {
+	background: rgba(255, 255, 255, 0.08);
+	color: #ffffff;
+}
+
 /* Form fields (restyled to the handoff in the form steps) */
 .field {
 	margin-bottom: var(--space-5);

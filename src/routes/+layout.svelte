@@ -7,9 +7,13 @@
 	import SiteFooter from '#lib/components/layout/SiteFooter.svelte';
 	import type { NavLink } from '#lib/components/layout/nav.ts';
 	import { site } from '#lib/config/site.ts';
+	import { landing } from '#lib/config/landing.ts';
+	import { liveWindowStatus } from '#lib/state/windowStatus.svelte.ts';
 	import type { LayoutProps } from './$types';
 
-	let { children }: LayoutProps = $props();
+	let { data, children }: LayoutProps = $props();
+
+	const status = liveWindowStatus(() => data.windowStatus);
 
 	const home = resolve('/');
 	// Only the landing page is dark all the way down; every other page (including /apply) has a white body.
@@ -30,16 +34,18 @@
 				]
 	);
 
-	const cta: NavLink = $derived(
-		isLanding
-			? { label: 'Apply now', href: resolve('/apply') }
-			: { label: 'Back to recruitment', href: home }
-	);
+	// On the landing page the pill follows the application window: the form while open, Discord otherwise.
+	const cta: NavLink = $derived.by(() => {
+		if (!isLanding) return { label: 'Back to recruitment', href: home };
+		const label = landing.cta[status.current].nav;
+		return status.current === 'open'
+			? { label, href: resolve('/apply') }
+			: { label, href: site.discordUrl, external: true };
+	});
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>{site.name} Recruitment</title>
 </svelte:head>
 
 <a class="skip-link" href="#main">Skip to content</a>
