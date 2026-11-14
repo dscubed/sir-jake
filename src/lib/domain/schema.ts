@@ -39,7 +39,7 @@ const resume = z
 	.refine((f) => f.size <= maxResumeBytes, `Your resume must be ${maxResumeMb} MB or smaller`);
 
 /**
- * Validates and normalises the application form. 
+ * Validates and normalises the application form.
  * Used in the browser as well as on the server
  * so this module must not import anything server-only.
  */
