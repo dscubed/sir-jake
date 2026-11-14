@@ -16,6 +16,9 @@ export const NOTION_VERSION = '2025-09-03';
 
 const PDF_TYPE = 'application/pdf';
 
+/** Waits before each check for a page that a failed `create` may have made (3.5 s in total). */
+export const CONFIRM_CREATE_DELAYS_MS = [500, 1000, 2000] as const;
+
 /** Notion requests that take longer than this count as timed out. */
 export const NOTION_TIMEOUT_MS = 10_000;
 
@@ -63,19 +66,17 @@ export class NotionApplicantRepository implements ApplicantRepository {
 
 	/** Reads are safe to repeat, so any rejected or uncertain failure is retried. */
 	private findPageId(email: string): Promise<PageId | undefined> {
-		return withRetry(
-			async () => {
-				const response = await this.client.dataSources.query({
-					data_source_id: this.dataSourceId,
-					filter: { property: PROP.email, email: { equals: email } },
-					page_size: 1,
-					result_type: 'page'
-				});
-				return response.results[0]?.id;
-			},
-			['rejected', 'unknown'],
-			this.retry
-		);
+		return withRetry(() => this.queryPageId(email), ['rejected', 'unknown'], this.retry);
+	}
+
+	private async queryPageId(email: string): Promise<PageId | undefined> {
+		const response = await this.client.dataSources.query({
+			data_source_id: this.dataSourceId,
+			filter: { property: PROP.email, email: { equals: email } },
+			page_size: 1,
+			result_type: 'page'
+		});
+		return response.results[0]?.id;
 	}
 
 	/**
@@ -136,12 +137,21 @@ export class NotionApplicantRepository implements ApplicantRepository {
 		}
 	}
 
+	/**
+	 * Looks for a page that a failed `create` may have made. Notion's query can take a moment to
+	 * include a new page, so this checks several times and stops at the first match. A check that
+	 * fails is skipped rather than retried, to keep the total wait short.
+	 */
 	private async findCreatedPage(email: string): Promise<PageId | undefined> {
-		try {
-			await this.retry.sleep(this.retry.baseDelayMs);
-			return await this.findPageId(email);
-		} catch {
-			return undefined;
+		for (const delay of CONFIRM_CREATE_DELAYS_MS) {
+			await this.retry.sleep(delay);
+			try {
+				const id = await this.queryPageId(email);
+				if (id) return id;
+			} catch {
+				// Try again after the next delay.
+			}
 		}
+		return undefined;
 	}
 }

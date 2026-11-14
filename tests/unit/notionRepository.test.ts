@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { recruitment } from '../../src/lib/config/recruitment';
 import type { Application } from '../../src/lib/domain/application';
 import { children, properties } from '../../src/lib/server/notion/pageBuilder';
-import { NotionApplicantRepository } from '../../src/lib/server/notion/repository';
+import {
+	CONFIRM_CREATE_DELAYS_MS,
+	NotionApplicantRepository
+} from '../../src/lib/server/notion/repository';
 import { UpstreamError } from '../../src/lib/server/ports';
 import {
 	badGateway,
@@ -203,6 +206,43 @@ describe('retry policy', () => {
 			const query = vi.fn().mockResolvedValue(found('p-existing'));
 			expect(await repoWith({}, { create }, { query }).create(app, 'up-1')).toBe('p-existing');
 			expect(create).toHaveBeenCalledTimes(1);
+		});
+
+		it('keeps checking until the new page shows up in the query', async () => {
+			sleep.mockClear();
+			const create = vi.fn().mockRejectedValue(serverError());
+			const query = vi
+				.fn()
+				.mockResolvedValueOnce(found())
+				.mockResolvedValueOnce(found())
+				.mockResolvedValue(found('p-late'));
+			expect(await repoWith({}, { create }, { query }).create(app, 'up-1')).toBe('p-late');
+			expect(query).toHaveBeenCalledTimes(3);
+			expect(sleep.mock.calls.map(([ms]) => ms)).toEqual([...CONFIRM_CREATE_DELAYS_MS]);
+		});
+
+		it('stops checking at the first match', async () => {
+			const create = vi.fn().mockRejectedValue(timeout());
+			const query = vi.fn().mockResolvedValueOnce(found()).mockResolvedValue(found('p-1'));
+			expect(await repoWith({}, { create }, { query }).create(app, 'up-1')).toBe('p-1');
+			expect(query).toHaveBeenCalledTimes(2);
+		});
+
+		it('skips a failed check and carries on with the next', async () => {
+			const create = vi.fn().mockRejectedValue(serverError());
+			const query = vi.fn().mockRejectedValueOnce(badGateway()).mockResolvedValue(found('p-1'));
+			expect(await repoWith({}, { create }, { query }).create(app, 'up-1')).toBe('p-1');
+			expect(query).toHaveBeenCalledTimes(2);
+		});
+
+		it('gives up after every check comes back empty', async () => {
+			const create = vi.fn().mockRejectedValue(serverError());
+			const query = vi.fn().mockResolvedValue(found());
+			await expect(repoWith({}, { create }, { query }).create(app, 'up-1')).rejects.toMatchObject({
+				name: 'UpstreamError',
+				operation: 'create'
+			});
+			expect(query).toHaveBeenCalledTimes(CONFIRM_CREATE_DELAYS_MS.length);
 		});
 
 		it('throws UpstreamError if the follow-up check also fails', async () => {
