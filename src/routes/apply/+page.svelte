@@ -18,6 +18,7 @@
 	import ResumeInput from '#lib/components/apply/ResumeInput.svelte';
 	import ReviewSubmit from '#lib/components/apply/ReviewSubmit.svelte';
 	import SubmitStatus from '#lib/components/apply/SubmitStatus.svelte';
+	import SubmitSuccess from '#lib/components/apply/SubmitSuccess.svelte';
 	import Turnstile from '#lib/components/apply/Turnstile.svelte';
 
 	let { data }: PageProps = $props();
@@ -168,65 +169,69 @@
 	<title>Apply · DSCubed Recruitment</title>
 </svelte:head>
 
-<section class="hero" aria-labelledby="apply-title">
-	<div class="hero-inner">
-		<span class="eyebrow">2027 Semester 1 · Officer application</span>
-		<h1 id="apply-title">Application Form</h1>
-		<p>Join to meet cool people, you won't regret it :)</p>
-	</div>
-</section>
-
-{#if finished}
-	<SubmitStatus kind={finished} />
-{:else if notOpen}
-	<SubmitStatus kind={notOpen} focus={false} />
+{#if finished === 'success'}
+	<SubmitSuccess />
 {:else}
-	<div class="layout">
-		<ProgressNav
-			sections={form.progress.sections}
-			doneCount={form.progress.doneCount}
-			total={form.progress.total}
-			{active}
-			saveNote={draft.note}
-			ongo={goToSection}
-		/>
+	<section class="hero" aria-labelledby="apply-title">
+		<div class="hero-inner">
+			<span class="eyebrow">2027 Semester 1 · Officer application</span>
+			<h1 id="apply-title">Application Form</h1>
+			<p>Join to meet cool people, you won't regret it :)</p>
+		</div>
+	</section>
 
-		<form
-			id="application"
-			method="POST"
-			enctype="multipart/form-data"
-			novalidate
-			aria-labelledby="apply-title"
-			aria-busy={submitting}
-			use:enhance={submitApplication}
-		>
-			<!-- Same ID on every attempt, so the server recognises a retry (design §6.4). -->
-			<input type="hidden" name={SUBMISSION_ID_FIELD} value={draft.submissionId} />
+	{#if finished}
+		<SubmitStatus />
+	{:else if notOpen}
+		<SubmitStatus focus={false} />
+	{:else}
+		<div class="layout">
+			<ProgressNav
+				sections={form.progress.sections}
+				doneCount={form.progress.doneCount}
+				total={form.progress.total}
+				{active}
+				saveNote={draft.note}
+				ongo={goToSection}
+			/>
 
-			{#if retryMessage}
-				<div class="banner" role="alert" tabindex="-1" bind:this={banner}>
-					{retryMessage}
-				</div>
-			{:else if showErrorBanner}
-				<div class="banner" role="alert">
-					Please fix {errorCount === 1 ? '1 field' : `${errorCount} fields`} before submitting.
-				</div>
-			{/if}
+			<form
+				id="application"
+				method="POST"
+				enctype="multipart/form-data"
+				novalidate
+				aria-labelledby="apply-title"
+				aria-busy={submitting}
+				use:enhance={submitApplication}
+			>
+				<!-- Same ID on every attempt, so the server recognises a retry (design §6.4). -->
+				<input type="hidden" name={SUBMISSION_ID_FIELD} value={draft.submissionId} />
 
-			<PersonalDetails {form} />
-			<RolePreferences {form} />
-			<Questions {form} />
-			<FormSection id="resume" title="Resume" gap={14}>
-				<ResumeInput bind:file={form.resume} error={form.shownErrors.resume} />
-			</FormSection>
-			<Availability {form} />
-			<ReviewSubmit {submitting} saveNote={draft.note} onclear={clearForm}>
-				{#snippet captcha()}
-					<Turnstile bind:this={turnstile} />
-				{/snippet}
-			</ReviewSubmit>
-		</form>
-	</div>
+				{#if retryMessage}
+					<div class="banner" role="alert" tabindex="-1" bind:this={banner}>
+						{retryMessage}
+					</div>
+				{:else if showErrorBanner}
+					<div class="banner" role="alert">
+						Please fix {errorCount === 1 ? '1 field' : `${errorCount} fields`} before submitting.
+					</div>
+				{/if}
+
+				<PersonalDetails {form} />
+				<RolePreferences {form} />
+				<Questions {form} />
+				<FormSection id="resume" title="Resume" gap={14}>
+					<ResumeInput bind:file={form.resume} error={form.shownErrors.resume} />
+				</FormSection>
+				<Availability {form} />
+				<ReviewSubmit {submitting} saveNote={draft.note} onclear={clearForm}>
+					{#snippet captcha()}
+						<Turnstile bind:this={turnstile} />
+					{/snippet}
+				</ReviewSubmit>
+			</form>
+		</div>
+	{/if}
 {/if}
 
 <style>

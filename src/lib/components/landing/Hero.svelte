@@ -1,19 +1,3 @@
-<script module lang="ts">
-	/** About 60 faint "stars" at fixed, pseudo-random positions (same formula as the design file). */
-	const stars = Array.from({ length: 60 }, (_, i) => {
-		const r = (n: number) => {
-			const x = Math.sin(i * 9301 + n * 49297) * 233280;
-			return x - Math.floor(x);
-		};
-		return {
-			x: `${(r(1) * 100).toFixed(2)}%`,
-			y: `${(r(2) * 100).toFixed(2)}%`,
-			size: r(3) > 0.85 ? 2 : 1,
-			opacity: (0.25 + r(4) * 0.5).toFixed(2)
-		};
-	});
-</script>
-
 <script lang="ts">
 	import { landing } from '#lib/config/landing.ts';
 	import type { DisplayStatus } from '#lib/domain/window.ts';
@@ -23,17 +7,6 @@
 </script>
 
 <section class="hero" aria-labelledby="hero-title">
-	<div class="stars" aria-hidden="true">
-		{#each stars as star, i (i)}
-			<span
-				style:left={star.x}
-				style:top={star.y}
-				style:width="{star.size}px"
-				style:height="{star.size}px"
-				style:opacity={star.opacity}
-			></span>
-		{/each}
-	</div>
 	<div class="inner">
 		<h1 id="hero-title">{landing.hero.title}</h1>
 		<p class="lead">{landing.hero.lead}</p>
@@ -57,12 +30,6 @@
 				#1a2347 65%,
 				#14141e 100%
 			);
-	}
-
-	.stars span {
-		position: absolute;
-		border-radius: 50%;
-		background: #ffffff;
 	}
 
 	.inner {
