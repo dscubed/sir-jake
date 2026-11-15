@@ -4,7 +4,7 @@ Nov 14, 2026 · @Steven
 
 ## How to use this plan
 
-Two developers build the site in five phases (0 to 4), over about five weeks of part-time work. Each developer does a similar share of frontend and backend work. **Dev A is Steven and owns every step that touches the Notion API.** **Dev B** is the second developer. The architecture, schemas and diagrams this plan refers to are in the [design document](https://claude.ai/artifact/56TYBDnoawQywrnXT9uRWm) (also saved as `docs/CLAUDE.md`). Section numbers such as "design §6.2" point there.
+Two developers build the site in five phases (0 to 4), over about five weeks of part-time work. Each developer does a similar share of frontend and backend work. **Dev A is Steven and owns every step that touches the Notion API.** **Dev B** is the second developer. The architecture, schemas and diagrams this plan refers to are in the [design document](https://claude.ai/artifact/56TYBDnoawQywrnXT9uRWm) (also saved as `docs/DESIGN.md`). Section numbers such as "design §6.2" point there.
 
 - **Step format.** Each step has an ID (for example 2.7), an owner, the steps it depends on, the files it touches, what to build, and a "Done when" test. A step counts as finished only when its "Done when" test passes.
 - **Working in parallel.** Phase 1 fixes the shared types, interfaces and an in-memory fake of the Notion repository first. After that, Dev B builds and tests the whole submission flow against the fake while Dev A builds the real Notion code. Neither has to wait for the other.
@@ -97,7 +97,7 @@ Phase 0 gives both developers a repository that builds, a CI pipeline, a test No
   1. Run `pnpm dlx sv create` with the minimal template and the TypeScript, ESLint, Prettier, Vitest and Playwright add-ons.
   2. Replace the default adapter with `@sveltejs/adapter-vercel`.
   3. Create the folder layout from design §12 with empty placeholder files.
-  4. Add `docs/CLAUDE.md`.
+  4. Add the design document as `docs/DESIGN.md`.
   5. Add the scripts `dev`, `build`, `check`, `lint`, `format`, `test`, `test:e2e`, and a `test:notion` script that Dev A fills in at step 2.4.
 - **Done when:** on a fresh clone, `pnpm install && pnpm dev` serves a page, and `pnpm check`, `pnpm lint` and `pnpm test` all pass.
 

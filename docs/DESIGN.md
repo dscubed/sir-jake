@@ -3,8 +3,7 @@
 | Field | Value |
 |---|---|
 | **Status** | Draft v1 |
-| **Owner** | Steven (President, DSCubed) |
-| **Last updated** | 14 November 2026 |
+| **Last updated** | 15 November 2026 |
 | **Scope** | Round 1 (written application) of 2027 Semester 1 recruitment |
 
 ## 1. Purpose and scope
@@ -38,7 +37,7 @@ This project replaces that process with a small website that:
 | ID | Requirement |
 |---|---|
 | FR1 | The landing page (`/`) describes DSCubed, every open role and the recruitment timeline. The "Apply now" link is at the bottom of the page. |
-| FR2 | The form (`/apply`) collects full name, student email, degree, expected graduation, availability for the group interview, availability for the individual interview, first and second preference roles, three responses, and a resume. |
+| FR2 | The form (`/apply`) collects full name, student email, degree, expected graduation, first and second preference roles, three responses, a resume, and which group interview sessions and individual interview days the applicant can attend (at least one of each). |
 | FR3 | The applicant must choose **exactly two different roles**, ranked as first and second preference. |
 | FR4 | There are exactly three questions: one general question, the first-preference role's question, and the second-preference role's question. A role asks the same question whichever rank it is given. |
 | FR5 | Each response is limited to **200 words**. |
@@ -130,7 +129,7 @@ flowchart TB
     action --> service
     service -- "verify token" --> captcha
     service -- "parse + validate" --> schema
-    service -- "existsByEmail, uploadResume, create" --> repo
+    service -- "findByEmail, uploadResume, create" --> repo
     repo -- "properties + blocks" --> builder
     repo -- "HTTPS (Bearer token)" --> notionapi
     captcha -- "HTTPS" --> cf
@@ -180,20 +179,21 @@ classDiagram
         +Date closesAt
         +number wordLimit
         +number maxResumeBytes
-        +InterviewDates interviews
+        +InterviewOptions interviews
+        +string outcomesDate
         +string[] graduationOptions
         +Question generalQuestion
         +Role[] roles
     }
-    class InterviewDates {
-        +string groupDate
-        +string individualDate
+    class InterviewOptions {
+        +string[] group
+        +string[] individual
     }
     class Role {
         +string id
         +string name
         +string description
-        +string[] responsibilities
+        +LookingFor lookingFor
         +Question question
         +Rubric rubric (future)
     }
@@ -208,8 +208,8 @@ classDiagram
         +string email
         +string degree
         +string graduation
-        +boolean availableGroup
-        +boolean availableIndividual
+        +string[] availableGroup
+        +string[] availableIndividual
         +RoleId firstPreference
         +RoleId secondPreference
         +Responses responses
@@ -226,7 +226,7 @@ classDiagram
         +number sizeBytes
         +Uint8Array bytes
     }
-    RecruitmentConfig "1" *-- "1" InterviewDates
+    RecruitmentConfig "1" *-- "1" InterviewOptions
     RecruitmentConfig "1" *-- "1" Question : general question
     RecruitmentConfig "1" *-- "2..*" Role
     Role "1" *-- "1" Question
@@ -242,6 +242,7 @@ classDiagram
 - Each of the three responses has between 1 and 200 words and at most 2,000 characters.
 - `email` is stored trimmed and in lowercase.
 - `graduation` is one of `graduationOptions`.
+- `availableGroup` and `availableIndividual` each hold at least one option from `interviews.group` and `interviews.individual`, deduplicated and in config order.
 
 ### 5.2 Server module model
 
@@ -263,7 +264,7 @@ classDiagram
     }
     class ApplicantRepository {
         <<interface>>
-        +existsByEmail(email: string) boolean
+        +findByEmail(email: string) ExistingApplication
         +uploadResume(file: ResumeFile) FileUploadId
         +create(app: Application, resume: FileUploadId) PageId
     }
@@ -271,7 +272,7 @@ classDiagram
         -Client notion
         -string dataSourceId
         -NotionPageBuilder builder
-        +existsByEmail(email) boolean
+        +findByEmail(email) ExistingApplication
         +uploadResume(file) FileUploadId
         +create(app, resume) PageId
         +listUnscored() PageId[] (future)
@@ -303,7 +304,9 @@ classDiagram
     NotionApplicantRepository --> NotionPageBuilder
 ```
 
-`Clock` is an interface so that tests can simulate submissions before the opening time and after the closing time.
+`Clock` is an interface so that tests can simulate submissions before the opening time and after the closing time. Outside production, the `FAKE_NOW` environment variable sets it for local testing.
+
+`findByEmail` returns the stored page's ID, submission ID and submission time, or nothing. The service uses the submission ID to recognise a retry of an application that already went through (Section 6.4).
 
 ### 5.3 Form state model (client)
 
@@ -377,7 +380,7 @@ sequenceDiagram
     S->>S: Check open window and empty honeypot
     S->>T: POST /siteverify (token, IP)
     T-->>S: success = true
-    S->>S: Zod parse, normalise email, assign submissionId
+    S->>S: Zod parse, normalise email, use the form's submissionId (or assign one)
     S->>N: POST /v1/data_sources/{id}/query (Email equals x)
     N-->>S: results = []
     S->>N: POST /v1/file_uploads (single_part, resume.pdf)
@@ -437,8 +440,10 @@ sequenceDiagram
     S->>S: Wait, then retry (max 2 retries)
     S->>N: POST /v1/pages
     N-->>S: 502 / timeout
-    S->>N: Re-run email query (did the page get created?)
-    alt Page now exists
+    loop Up to 3 checks, after 0.5 s, 1 s and 2 s
+        S->>N: Email query (did the page get created?)
+    end
+    alt Page exists with this submission ID
         N-->>S: 1 result
         S-->>B: 200 ok (treated as success)
     else Still not created
@@ -450,9 +455,11 @@ sequenceDiagram
 
 **Retry rules**
 
-- Read requests and file-upload requests are safe to retry.
-- Page creation is retried straight away only after a `429`, because Notion rejected that request without processing it.
-- After a timeout or a `5xx` error, the page may or may not have been created. The service therefore re-runs the email query *before* deciding whether to retry. This avoids creating duplicate pages.
+- Read requests and file-upload requests are retried up to 2 times after a `429`/`529`, a `5xx`, a timeout or a network error, honouring `Retry-After`.
+- Page creation is retried only after a `429` or `529`, because Notion rejected that request without processing it.
+- After a timeout or a `5xx` error on page creation, the page may or may not have been created. The repository checks by email up to 3 times (after 0.5 s, 1 s and 2 s) and accepts a page only if its `Submission ID` matches this attempt. This avoids creating duplicate pages.
+- The browser posts the same `submissionId` on every attempt of one draft. If the applicant retries after a failure that actually created the page, the service finds that page by email, sees the matching submission ID, and returns success instead of `duplicate`.
+- The Notion SDK's own retries are turned off, and each request times out after 10 seconds.
 - An unattached file upload left behind by a failed attempt is never used.
 
 ### 6.5 AI screening batch job (future)
@@ -490,8 +497,8 @@ This is created **manually** in the Notion UI, before launch, following the tabl
 | Email | Email | `email` (trimmed, lowercase) | yes | Uniqueness key. Notion does not enforce uniqueness itself; the application does (D5). |
 | Degree | Text | `degree` | yes | Free text, because degree names differ between universities. |
 | Expected graduation | Select | `graduation` | yes | Options: 2027 Sem 1, 2027 Sem 2, 2028 Sem 1, 2028 Sem 2, 2029 Sem 1, 2029 Sem 2, 2030 Sem 1, 2030 Sem 2 |
-| Group interview available | Checkbox | `availableGroup` | yes | |
-| Individual interview available | Checkbox | `availableIndividual` | yes | |
+| Group interview availability | Multi-select | `availableGroup` | yes | Options: Wed 10 March, Thu 11 March. Must match `interviews.group` in the config exactly. |
+| Individual interview availability | Multi-select | `availableIndividual` | yes | Options: Fri 12 March, Sat 13 March. Must match `interviews.individual` in the config exactly. |
 | First preference | Select | role name for `firstPreference` | yes | Options are the role names in the config. Create them in advance so their order and colours are controlled. |
 | Second preference | Select | role name for `secondPreference` | yes | Same options as First preference |
 | Resume | Files & media | uploaded PDF | yes | |
@@ -523,7 +530,7 @@ erDiagram
         string id PK
         string name UK
         string description
-        string_list responsibilities
+        string_list lookingFor
     }
     QUESTION {
         string id PK
@@ -536,8 +543,8 @@ erDiagram
         string name
         string degree
         string expectedGraduation
-        boolean groupAvailable
-        boolean individualAvailable
+        string_list groupAvailability
+        string_list individualAvailability
         string firstPreference FK
         string secondPreference FK
         datetime submittedAt
@@ -562,11 +569,11 @@ The responses are written as page content rather than as properties. This makes 
 
 ```text
 [heading_2]  Application responses
-[heading_3]  General: Why do you want to join DSCubed?
+[heading_3]  General: <general question>
 [paragraph]  <answer, max 200 words>
-[heading_3]  First preference (Events Officer): <role question>
+[heading_3]  First preference (Events): <role question>
 [paragraph]  <answer>
-[heading_3]  Second preference (Marketing Officer): <role question>
+[heading_3]  Second preference (Media): <role question>
 [paragraph]  <answer>
 [divider]
 [heading_2]  Group interview notes
@@ -585,10 +592,13 @@ export interface Question { id: string; label: string; helpText?: string }
 
 export interface Role {
   id: string;                 // stable slug, e.g. "events"
-  name: string;               // must match the Notion select option exactly
-  description: string;        // shown on the landing page
-  responsibilities: string[]; // shown on the landing page
-  question: Question;         // exactly one question per role
+  name: string;               // must match the Notion select option exactly, e.g. "Events"
+  description: string;        // one sentence, shown on the landing page
+  lookingFor: {               // shown in a dropdown on the role's card
+    intro: string;            // e.g. "We are looking for applicants who:"
+    points: string[];
+  };
+  question: Question;         // exactly one question per role; shown only on the form
   // rubric?: Rubric;         // added in the AI phase
 }
 
@@ -598,7 +608,11 @@ export interface RecruitmentConfig {
   closesAt: string;
   wordLimit: 200;
   maxResumeBytes: number;     // 4 * 1024 * 1024
-  interviews: { groupDate: string; individualDate: string }; // "TBD" until confirmed
+  interviews: {
+    group: readonly [string, ...string[]];      // sessions, e.g. "Wed 10 March"
+    individual: readonly [string, ...string[]]; // days; both must match the Notion options
+  };
+  outcomesDate: string;       // display only, e.g. "Sun 14 March"
   graduationOptions: readonly string[];
   generalQuestion: Question;
   roles: readonly Role[];
@@ -606,26 +620,29 @@ export interface RecruitmentConfig {
 ```
 
 ```ts
-// src/lib/config/recruitment.ts (2027 S1 content; placeholders until directors submit questions)
+// src/lib/config/recruitment.ts (2027 S1 content, abridged)
 export const recruitment = {
   cycle: "2027-S1",
-  opensAt: "TBD",
-  closesAt: "TBD",
+  opensAt: "2027-02-22T09:00:00+11:00",
+  closesAt: "2027-03-07T23:59:00+11:00",
   wordLimit: 200,
   maxResumeBytes: 4 * 1024 * 1024,
-  interviews: { groupDate: "TBD", individualDate: "TBD" },
+  interviews: {
+    group: ["Wed 10 March", "Thu 11 March"],
+    individual: ["Fri 12 March", "Sat 13 March"],
+  },
+  outcomesDate: "Sun 14 March",
   graduationOptions: ["2027 Sem 1", "2027 Sem 2", "2028 Sem 1", "2028 Sem 2",
                       "2029 Sem 1", "2029 Sem 2", "2030 Sem 1", "2030 Sem 2"],
-  generalQuestion: { id: "why_join", label: "Why do you want to join DSCubed?" },
+  generalQuestion: {
+    id: "why_join",
+    label: "Why do you want to join the DSCubed committee, and what would you bring to the team?",
+  },
   roles: [
-    {
-      id: "events",
-      name: "Events Officer",
-      description: "Plan and run DSCubed's workshops and socials.",
-      responsibilities: ["TBD"],
-      question: { id: "events_q", label: "TBD (from Events director)" },
-    },
-    // ...one entry per role
+    role("events", "Events", "<one-sentence description>",
+         { intro: "We are looking for applicants who:", points: ["..."] },
+         "<the Events question>"),
+    // ...seven roles: events, graphics, media, hr, industry, education, products
   ],
 } satisfies RecruitmentConfig;
 ```
@@ -638,8 +655,8 @@ export const recruitment = {
 | `email` | email | Valid format, at most 254 characters, then trimmed and lowercased |
 | `degree` | text | Trimmed, 1 to 150 characters |
 | `graduation` | select | One of `graduationOptions` |
-| `availableGroup` | radio | `"yes"` or `"no"` |
-| `availableIndividual` | radio | `"yes"` or `"no"` |
+| `availableGroup` | checkboxes (repeated field) | At least one of `interviews.group` |
+| `availableIndividual` | checkboxes (repeated field) | At least one of `interviews.individual` |
 | `firstPreference` | select | A role `id` from the config |
 | `secondPreference` | select | A role `id`, different from `firstPreference` |
 | `answerGeneral` | textarea | 1 to 200 words, at most 2,000 characters |
@@ -648,6 +665,7 @@ export const recruitment = {
 | `resume` | file | Required, `.pdf`, at most 4 MB, first bytes are `%PDF-` |
 | `cf-turnstile-response` | hidden | Verified on the server with Cloudflare |
 | `website` | hidden honeypot | Must be empty |
+| `submissionId` | hidden | A UUID kept with the browser's draft and reused on every attempt. Optional; the server assigns one if it is missing or invalid. |
 
 Words are counted with `text.trim().split(/\s+/).filter(Boolean).length`. The browser and the server use this same function, which is shared through `src/lib/domain/words.ts`.
 
@@ -664,8 +682,9 @@ export const applicationSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   degree: z.string().trim().min(1).max(150),
   graduation: z.enum(recruitment.graduationOptions as [string, ...string[]]),
-  availableGroup: z.enum(["yes", "no"]).transform(v => v === "yes"),
-  availableIndividual: z.enum(["yes", "no"]).transform(v => v === "yes"),
+  // One or more options, read with formData.getAll(); deduplicated and put in config order.
+  availableGroup: z.array(z.enum(recruitment.interviews.group)).min(1, "Select at least one session"),
+  availableIndividual: z.array(z.enum(recruitment.interviews.individual)).min(1, "Select at least one day"),
   firstPreference: z.enum(roleIds),
   secondPreference: z.enum(roleIds),
   answerGeneral: answer, answerFirst: answer, answerSecond: answer,
@@ -684,21 +703,23 @@ This is a SvelteKit default form action, progressively enhanced with `use:enhanc
 
 | Outcome | HTTP status | Action data | UI behaviour |
 |---|---|---|---|
-| Success | 200 | `{ ok: true, submittedAt }` | Success screen; draft cleared |
-| Closed | 403 | `{ reason: "closed" }` | "Applications are closed" |
+| Success | 200 | `{ ok: true, submittedAt }` | "Thanks for applying" screen; draft cleared |
+| Closed | 403 | `{ reason: "closed" }` | "Applications closed" |
 | CAPTCHA failed | 400 | `{ reason: "captcha" }` | Ask the applicant to retry the check; draft kept |
 | Invalid | 400 | `{ reason: "invalid", fieldErrors }` | Errors shown beside the fields; draft kept |
 | Duplicate | 409 | `{ reason: "duplicate" }` | "An application with this email already exists. Contact DSCubed if you need to change it." |
 | Notion error | 502 | `{ reason: "upstream" }` | "Something went wrong, please try again." Draft kept |
 
-The action never sends the uploaded file back to the browser. The browser restores the file input from its own state, or asks the applicant to re-attach the file.
+The action never sends the uploaded file back to the browser. After a failed submission the chosen file stays attached, because the page is not reloaded; after a reload the applicant has to attach it again.
+
+Outside the application window, `/apply` shows "Applications closed" instead of the form, and the buttons on the landing page and in the nav become a greyed-out "Applications closed" label. The landing page is prerendered, so it works out the window from the browser's clock.
 
 ## 9. Reliability, logging and limits
 
-- **Logging:** each request logs `submissionId`, the outcome and the duration to the Vercel function logs. Names, emails, answers and resume contents are **never** logged.
+- **Logging:** each request logs one JSON line to the Vercel function logs: `{ submissionId, outcome, durationMs }`, plus `step` (which Notion call failed) for `upstream`, and `alreadyCreated` when a retry found its own page. Names, emails, answers and resume contents are **never** logged.
 - **Notion rate limit:** 4 requests per submission. Retries follow `Retry-After` (Section 6.4).
 - **Payload limit:** Vercel's request body limit (about 4.5 MB) sets the 4 MB resume cap. The browser checks the size before uploading.
-- **Draft safety:** text fields are saved to `localStorage` while the applicant types (debounced). The resume file is not saved, since browsers cannot persist file inputs, so after a failure the applicant may need to re-attach it.
+- **Draft safety:** every answer, including the interview checkboxes, is saved to `localStorage` while the applicant types (debounced to 500 ms), with the draft's `submissionId`. The resume file is not saved, since browsers cannot persist file inputs, so after a reload the applicant has to attach it again.
 
 ## 10. Security and privacy
 
@@ -733,20 +754,29 @@ src/
     config/
       types.ts                 RecruitmentConfig, Role, Question
       recruitment.ts           2027 S1 content (the file edited for each cycle)
+      landing.ts               landing page copy
+      notice.ts                collection notice
     domain/
       schema.ts                Zod schema built from config
       words.ts                 countWords (shared by client and server)
+      window.ts                application window state and date formatting
       application.ts           Application type, SubmitResult union
+    apply/                     form state, validation, progress and draft autosave (browser)
     server/
       applicationService.ts    orchestrates submit()
+      container.ts             builds the service from environment variables
+      ports.ts                 ApplicantRepository, CaptchaVerifier, Clock
+      fakeRepository.ts        in-memory repository for development and tests
       notion/
         repository.ts          NotionApplicantRepository
         pageBuilder.ts         properties + body blocks
-      turnstile.ts             TurnstileVerifier
+        retry.ts               retry policy
+      turnstile.ts             TurnstileVerifier and honeypot check
     components/
-      RoleCard.svelte
-      QuestionField.svelte     textarea + live word counter
-      ResumeInput.svelte
+      landing/                 hero, about, process, FAQ, closing call to action
+      apply/                   form sections, success and closed screens
+      form/                    text, select, radio and checkbox fields
+      layout/                  header and footer
   routes/
     +page.svelte               landing page (prerender = true)
     apply/
@@ -755,6 +785,7 @@ src/
 tests/
   unit/                        schema, words, pageBuilder, service with fakes
   integration/                 repository against TEST Applications database
+  e2e/                         Playwright: form and landing page against a production build
 ```
 
 ## 13. Setup checklist
@@ -780,10 +811,10 @@ tests/
 
 ## 15. Open items
 
-- [ ] Role list, descriptions, responsibilities and one question per role (from directors)
-- [ ] Wording of the general question
-- [ ] Application open and close times
-- [ ] Group and individual interview dates (currently "TBD")
+- [ ] Directors to confirm the role descriptions, "looking for" points and one question per role (drafted in the config)
+- [ ] Wording of the general question (drafted in the config)
+- [x] Application open and close times (22 Feb 9:00 am to 7 Mar 11:59 pm, 2027)
+- [x] Group and individual interview dates (10 to 11 March and 12 to 13 March; outcomes 14 March)
 - [ ] Wording of the collection notice, and the retention period
 - [ ] Domain: a `*.vercel.app` subdomain or a custom domain
 - [ ] Which committee members get access to the Notion database
