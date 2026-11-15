@@ -24,7 +24,6 @@
 				<span aria-hidden="true"><span class="ds">DS</span>CUBED</span>
 			</span>
 		</div>
-		<address>{site.address}</address>
 		<a class="discord" href={site.discordUrl} target="_blank" rel="noopener noreferrer">
 			<img src={discordIcon} alt="" width="17" height="13" />
 			Join our Discord
@@ -77,13 +76,6 @@
 
 	.ds {
 		color: var(--blue);
-	}
-
-	address {
-		font-size: var(--text-xs);
-		font-style: normal;
-		line-height: 1.5;
-		color: var(--footer-text);
 	}
 
 	.discord {
