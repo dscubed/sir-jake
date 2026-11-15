@@ -5,43 +5,45 @@
 	import favicon from '#lib/assets/favicon.svg';
 	import SiteHeader from '#lib/components/layout/SiteHeader.svelte';
 	import SiteFooter from '#lib/components/layout/SiteFooter.svelte';
-	import type { NavLink } from '#lib/components/layout/nav.ts';
-	import { site } from '#lib/config/site.ts';
+	import type { NavCta, NavLink } from '#lib/components/layout/nav.ts';
 	import { landing } from '#lib/config/landing.ts';
 	import { liveWindowStatus } from '#lib/state/windowStatus.svelte.ts';
+	import { displayStatus } from '#lib/domain/window.ts';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
 
-	const status = liveWindowStatus(() => data.windowStatus);
+	const live = liveWindowStatus(() => data.windowStatus);
+	// On /apply, follow the server's answer so the nav always matches whether the form is shown.
+	const status = $derived(
+		page.data.windowState ? displayStatus(page.data.windowState) : live.current
+	);
 
 	const home = resolve('/');
 	// Only the landing page is dark all the way down; every other page (including /apply) has a white body.
 	const isLanding = $derived(page.route.id === '/');
 
-	// The landing page links to its own sections; the application page links back to them.
+	// Every page shows the same links to the landing page's sections.
+	const sections = [
+		{ label: 'About', id: 'about' },
+		{ label: 'Teams', id: 'teams' },
+		{ label: 'Process', id: 'process' },
+		{ label: 'FAQ', id: 'faq' }
+	];
 	const links: NavLink[] = $derived(
-		isLanding
-			? [
-					{ label: 'About', href: '#about' },
-					{ label: 'Teams', href: '#teams' },
-					{ label: 'Process', href: '#process' },
-					{ label: 'FAQ', href: '#faq' }
-				]
-			: [
-					{ label: 'Teams', href: `${home}#teams` },
-					{ label: 'FAQ', href: `${home}#faq` }
-				]
+		sections.map(({ label, id }) => ({ label, href: isLanding ? `#${id}` : `${home}#${id}` }))
 	);
 
-	// On the landing page the pill follows the application window: the form while open, Discord otherwise.
-	const cta: NavLink = $derived.by(() => {
-		if (!isLanding) return { label: 'Back to recruitment', href: home };
-		const label = landing.cta[status.current].nav;
-		return status.current === 'open'
-			? { label, href: resolve('/apply') }
-			: { label, href: site.discordUrl, external: true };
-	});
+	// The pill follows the application window on every page: the form while open, a plain label otherwise.
+	const cta: NavCta = $derived(
+		status === 'open'
+			? {
+					label: landing.cta.open.label,
+					href: resolve('/apply'),
+					current: page.route.id === '/apply'
+				}
+			: { label: landing.cta.closed }
+	);
 </script>
 
 <svelte:head>

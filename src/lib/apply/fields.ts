@@ -58,14 +58,14 @@ export const fieldOrder: readonly ApplicationField[] = [
 	'email',
 	'degree',
 	'graduation',
-	'availableGroup',
-	'availableIndividual',
 	'firstPreference',
 	'secondPreference',
 	'answerGeneral',
 	'answerFirst',
 	'answerSecond',
-	'resume'
+	'resume',
+	'availableGroup',
+	'availableIndividual'
 ];
 
 const isEmpty = (value: string | File | null) =>

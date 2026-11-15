@@ -3,6 +3,7 @@ import {
 	applicationWindow,
 	displayStatus,
 	formatMelbourne,
+	formatMelbourneDay,
 	windowState
 } from '../../src/lib/domain/window';
 
@@ -60,5 +61,15 @@ describe('formatMelbourne', () => {
 
 	it('keeps TBD for unset dates', () => {
 		expect(formatMelbourne('TBD')).toBe('TBD');
+	});
+});
+
+describe('formatMelbourneDay', () => {
+	it('shows the Melbourne day without the time', () => {
+		expect(formatMelbourneDay('2027-03-07T23:59:00+11:00')).toBe('Sun 7 Mar');
+	});
+
+	it('leaves unset dates as TBD', () => {
+		expect(formatMelbourneDay('TBD')).toBe('TBD');
 	});
 });

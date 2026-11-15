@@ -59,3 +59,16 @@ export function formatMelbourne(value: string): string {
 	const date = new Date(value);
 	return Number.isNaN(date.getTime()) ? 'TBD' : melbourneFormat.format(date);
 }
+
+const melbourneDayFormat = new Intl.DateTimeFormat('en-AU', {
+	timeZone: 'Australia/Melbourne',
+	weekday: 'short',
+	day: 'numeric',
+	month: 'short'
+});
+
+/** Formats a config date as a Melbourne day, e.g. "Mon 22 Feb". Unset dates stay "TBD". */
+export function formatMelbourneDay(value: string): string {
+	const date = new Date(value);
+	return Number.isNaN(date.getTime()) ? 'TBD' : melbourneDayFormat.format(date).replace(',', '');
+}

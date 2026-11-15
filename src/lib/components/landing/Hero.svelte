@@ -38,7 +38,7 @@
 		<h1 id="hero-title">{landing.hero.title}</h1>
 		<p class="lead">{landing.hero.lead}</p>
 		<div class="actions">
-			<CtaLink {status} label={landing.cta[status].hero} class="pill-button light" />
+			<CtaLink {status} class="pill-button light" />
 			<a class="pill-button outline" href="#teams">Explore teams</a>
 		</div>
 	</div>

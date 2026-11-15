@@ -1,18 +1,15 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { site } from '#lib/config/site.ts';
-	import { formatMelbourne } from '#lib/domain/window.ts';
+	import { landing } from '#lib/config/landing.ts';
 
-	/** Shown instead of the form: after a submission, or when applications aren't open (step 3.6, design §8). */
+	/** Shown instead of the form: after a submission, or when applications aren't open. */
 	interface Props {
 		kind: 'success' | 'closed' | 'upcoming';
-		/** ISO opening time from the page's load, for the upcoming message. */
-		opensAt?: string;
 		/** Move focus to the heading. Only after a submission, never on a plain page load. */
 		focus?: boolean;
 	}
 
-	let { kind, opensAt, focus = true }: Props = $props();
+	let { kind, focus = true }: Props = $props();
 
 	let heading: HTMLHeadingElement | undefined = $state();
 
@@ -23,7 +20,6 @@
 	});
 </script>
 
-<!-- eslint-disable svelte/no-navigation-without-resolve -- the only other link is the external Discord invite. -->
 <div class="status">
 	<div class="card">
 		{#if kind === 'success'}
@@ -41,25 +37,8 @@
 			</span>
 			<h2 bind:this={heading} tabindex="-1">Thank you for applying</h2>
 			<p class="lead">We wish you the best of luck.</p>
-		{:else if kind === 'upcoming'}
-			<h2 bind:this={heading} tabindex="-1">Applications aren’t open yet</h2>
-			<p class="lead">
-				Applications for 2027 Semester 1 open {opensAt ? formatMelbourne(opensAt) : 'soon'}. Join
-				our
-				<a href={site.discordUrl} target="_blank" rel="noopener noreferrer"
-					>Discord<span class="visually-hidden"> (opens in a new tab)</span></a
-				>
-				to hear the moment they open.
-			</p>
 		{:else}
-			<h2 bind:this={heading} tabindex="-1">Applications are closed</h2>
-			<p class="lead">
-				Applications for 2027 Semester 1 have closed. Join our
-				<a href={site.discordUrl} target="_blank" rel="noopener noreferrer"
-					>Discord<span class="visually-hidden"> (opens in a new tab)</span></a
-				>
-				to hear about the next round.
-			</p>
+			<h2 bind:this={heading} tabindex="-1">{landing.cta.closed}</h2>
 		{/if}
 		<div class="actions">
 			<a class="button" href={resolve('/')}>Back to recruitment</a>

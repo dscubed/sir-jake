@@ -1,5 +1,3 @@
-import type { DisplayStatus } from '#lib/domain/window.ts';
-
 export const landing = {
 	hero: {
 		title: 'Join the largest data science student society in Australia',
@@ -20,12 +18,11 @@ export const landing = {
 		eyebrow: 'How it works',
 		title: 'Our recruitment process',
 		application: 'Choose two preferred teams, answer a few short questions and upload your resume.',
-		group: 'A short group exercise with other applicants and members of the committee.',
-		individual: 'An interview with directors from your preferred teams.',
-		offer: {
-			when: 'TBD',
-			body: 'Successful applicants will hear back by email and join onboarding.'
-		}
+		group:
+			'A short group exercise with other applicants and members of the committee. There are two sessions, so come to whichever suits you.',
+		individual:
+			'An interview with directors from your preferred teams. You’ll book a time on either day.',
+		offer: 'Successful applicants will hear back by email and join onboarding.'
 	},
 	faq: {
 		eyebrow: 'FAQ',
@@ -52,24 +49,13 @@ export const landing = {
 	/** Calls to action change with the application window. */
 	cta: {
 		open: {
-			hero: 'Apply now',
-			nav: 'Apply now',
+			label: 'Apply now',
 			title: 'Ready to join the committee?',
 			body: 'Choose your preferred teams on the application page. It takes about 20 minutes.'
 		},
-		upcoming: {
-			hero: 'Get notified on Discord',
-			nav: 'Get notified',
-			title: 'Applications open soon',
-			body: 'Join our Discord to hear the moment applications open.'
-		},
-		closed: {
-			hero: 'Join our Discord',
-			nav: 'Join Discord',
-			title: 'Thanks for your interest',
-			body: 'Applications for 2027 Semester 1 have closed. Join our Discord to hear about the next round.'
-		}
-	} satisfies Record<DisplayStatus, { hero: string; nav: string; title: string; body: string }>
+		/** Shown before applications open and after they close. */
+		closed: 'Applications closed'
+	}
 };
 
 const numberWords = [

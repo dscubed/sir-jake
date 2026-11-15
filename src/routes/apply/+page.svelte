@@ -11,6 +11,7 @@
 	import type { PageProps } from './$types';
 	import ProgressNav from '#lib/components/apply/ProgressNav.svelte';
 	import PersonalDetails from '#lib/components/apply/PersonalDetails.svelte';
+	import Availability from '#lib/components/apply/Availability.svelte';
 	import RolePreferences from '#lib/components/apply/RolePreferences.svelte';
 	import Questions from '#lib/components/apply/Questions.svelte';
 	import FormSection from '#lib/components/apply/FormSection.svelte';
@@ -170,15 +171,15 @@
 <section class="hero" aria-labelledby="apply-title">
 	<div class="hero-inner">
 		<span class="eyebrow">2027 Semester 1 · Officer application</span>
-		<h1 id="apply-title">Apply to join the DSCubed committee</h1>
-		<p>Your answers save automatically on this device, so you can come back and finish later.</p>
+		<h1 id="apply-title">Application Form</h1>
+		<p>Join to meet cool people, you won't regret it :)</p>
 	</div>
 </section>
 
 {#if finished}
 	<SubmitStatus kind={finished} />
 {:else if notOpen}
-	<SubmitStatus kind={notOpen} opensAt={data.opensAt} focus={false} />
+	<SubmitStatus kind={notOpen} focus={false} />
 {:else}
 	<div class="layout">
 		<ProgressNav
@@ -218,6 +219,7 @@
 			<FormSection id="resume" title="Resume" gap={14}>
 				<ResumeInput bind:file={form.resume} error={form.shownErrors.resume} />
 			</FormSection>
+			<Availability {form} />
 			<ReviewSubmit {submitting} saveNote={draft.note} onclear={clearForm}>
 				{#snippet captcha()}
 					<Turnstile bind:this={turnstile} />

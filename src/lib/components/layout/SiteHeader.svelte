@@ -2,7 +2,7 @@
 	import logoWhite from '#lib/assets/brand/logo-white.png';
 	import discordIcon from '#lib/assets/brand/discord.png';
 	import { site } from '#lib/config/site.ts';
-	import type { NavLink } from './nav.ts';
+	import type { NavCta, NavLink } from './nav.ts';
 
 	interface Props {
 		/** Where the logo links to. */
@@ -10,7 +10,7 @@
 		/** Text links, hidden on narrow screens where they would not fit. */
 		links: NavLink[];
 		/** The pill button on the right. */
-		cta: NavLink;
+		cta: NavCta;
 	}
 
 	let { homeHref, links, cta }: Props = $props();
@@ -41,15 +41,20 @@
 					<li><a href={link.href}>{link.label}</a></li>
 				{/each}
 			</ul>
-			<a
-				class="pill"
-				href={cta.href}
-				target={cta.external ? '_blank' : undefined}
-				rel={cta.external ? 'noopener noreferrer' : undefined}
-			>
-				{cta.label}
-				{#if cta.external}<span class="visually-hidden">(opens in a new tab)</span>{/if}
-			</a>
+			{#if cta.href}
+				<a
+					class="pill"
+					href={cta.href}
+					target={cta.external ? '_blank' : undefined}
+					rel={cta.external ? 'noopener noreferrer' : undefined}
+					aria-current={cta.current ? 'page' : undefined}
+				>
+					{cta.label}
+					{#if cta.external}<span class="visually-hidden">(opens in a new tab)</span>{/if}
+				</a>
+			{:else}
+				<span class="pill closed">{cta.label}</span>
+			{/if}
 		</nav>
 	</div>
 </header>
@@ -154,9 +159,16 @@
 		inset: -5px 0;
 	}
 
-	.pill:hover {
+	a.pill:hover {
 		background: #ffffff;
 		color: var(--bg-dark);
+	}
+
+	.pill.closed {
+		background: rgba(255, 255, 255, 0.12);
+		color: var(--text-on-dark-2);
+		cursor: default;
+		user-select: none;
 	}
 
 	@media (max-width: 719px) {

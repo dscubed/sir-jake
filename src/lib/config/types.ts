@@ -24,7 +24,7 @@ export interface Role {
 
 export interface RecruitmentConfig {
 	cycle: '2027-S1';
-	/** ISO 8601 with the Melbourne offset, e.g. "2027-02-20T09:00:00+11:00". "TBD" until confirmed. */
+	/** ISO 8601 with the Melbourne offset, e.g. "2027-02-20T09:00:00+11:00". */
 	opensAt: string;
 	/** Same format as `opensAt`. */
 	closesAt: string;
@@ -32,8 +32,10 @@ export interface RecruitmentConfig {
 	wordLimit: 200;
 	/** 4 MB, set by Vercel's request body limit. */
 	maxResumeBytes: number;
-	/** Display dates for the two interview rounds. "TBD" until confirmed. */
+	/** Display dates for the two interview rounds, e.g. "Wed 10 and Thu 11 March".  */
 	interviews: { groupDate: string; individualDate: string };
+	/** Display date for when outcomes are sent.  */
+	outcomesDate: string;
 	/** Must match the Notion `Expected graduation` select options exactly. */
 	graduationOptions: readonly string[];
 	generalQuestion: Question;

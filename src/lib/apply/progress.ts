@@ -1,22 +1,24 @@
 import type { ApplicationField } from '#lib/domain/application.ts';
 import { visibleFields, type FormErrors, type FormValues } from './fields.ts';
 
-export type SectionId = 'personal' | 'roles' | 'questions' | 'resume' | 'submit';
+export type SectionId = 'personal' | 'roles' | 'questions' | 'resume' | 'availability' | 'submit';
 
-/** The four sections the applicant fills in, then the review step. */
+/** The five sections the applicant fills in, then the review step. */
 export const sections: readonly { id: SectionId; label: string }[] = [
 	{ id: 'personal', label: 'Personal details' },
 	{ id: 'roles', label: 'Role preferences' },
 	{ id: 'questions', label: 'Questions' },
 	{ id: 'resume', label: 'Resume' },
+	{ id: 'availability', label: 'Availability' },
 	{ id: 'submit', label: 'Review and submit' }
 ];
 
 const sectionFields: Record<Exclude<SectionId, 'submit'>, readonly ApplicationField[]> = {
-	personal: ['fullName', 'email', 'degree', 'graduation', 'availableGroup', 'availableIndividual'],
+	personal: ['fullName', 'email', 'degree', 'graduation'],
 	roles: ['firstPreference', 'secondPreference'],
 	questions: ['answerGeneral', 'answerFirst', 'answerSecond'],
-	resume: ['resume']
+	resume: ['resume'],
+	availability: ['availableGroup', 'availableIndividual']
 };
 
 export interface SectionProgress {
