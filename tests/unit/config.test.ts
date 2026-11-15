@@ -7,7 +7,7 @@ const role = (id: string, name: string): Role => ({
 	id,
 	name,
 	description: 'd',
-	responsibilities: [],
+	lookingFor: { intro: '', points: [] },
 	question: { id: `${id}_q`, label: 'q' }
 });
 
