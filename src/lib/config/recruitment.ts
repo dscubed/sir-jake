@@ -15,11 +15,11 @@ function role(
 
 export const recruitment = {
 	cycle: '2027-S1',
-	opensAt: 'TBD',
-	closesAt: 'TBD',
+	opensAt: 'TBD', // TO DO
+	closesAt: 'TBD', // TO DO
 	wordLimit: 200,
 	maxResumeBytes: 4 * 1024 * 1024,
-	interviews: { groupDate: 'TBD', individualDate: 'TBD' },
+	interviews: { groupDate: 'TBD', individualDate: 'TBD' }, // TO DO
 	graduationOptions: [
 		'2027 Sem 1',
 		'2027 Sem 2',

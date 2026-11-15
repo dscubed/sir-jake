@@ -46,6 +46,7 @@
 				href={cta.href}
 				target={cta.external ? '_blank' : undefined}
 				rel={cta.external ? 'noopener noreferrer' : undefined}
+				aria-current={cta.current ? 'page' : undefined}
 			>
 				{cta.label}
 				{#if cta.external}<span class="visually-hidden">(opens in a new tab)</span>{/if}

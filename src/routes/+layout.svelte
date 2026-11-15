@@ -19,27 +19,22 @@
 	// Only the landing page is dark all the way down; every other page (including /apply) has a white body.
 	const isLanding = $derived(page.route.id === '/');
 
-	// The landing page links to its own sections; the application page links back to them.
+	// Every page shows the same links to the landing page's sections.
+	const sections = [
+		{ label: 'About', id: 'about' },
+		{ label: 'Teams', id: 'teams' },
+		{ label: 'Process', id: 'process' },
+		{ label: 'FAQ', id: 'faq' }
+	];
 	const links: NavLink[] = $derived(
-		isLanding
-			? [
-					{ label: 'About', href: '#about' },
-					{ label: 'Teams', href: '#teams' },
-					{ label: 'Process', href: '#process' },
-					{ label: 'FAQ', href: '#faq' }
-				]
-			: [
-					{ label: 'Teams', href: `${home}#teams` },
-					{ label: 'FAQ', href: `${home}#faq` }
-				]
+		sections.map(({ label, id }) => ({ label, href: isLanding ? `#${id}` : `${home}#${id}` }))
 	);
 
-	// On the landing page the pill follows the application window: the form while open, Discord otherwise.
+	// The pill follows the application window on every page: the form while open, Discord otherwise.
 	const cta: NavLink = $derived.by(() => {
-		if (!isLanding) return { label: 'Back to recruitment', href: home };
 		const label = landing.cta[status.current].nav;
 		return status.current === 'open'
-			? { label, href: resolve('/apply') }
+			? { label, href: resolve('/apply'), current: page.route.id === '/apply' }
 			: { label, href: site.discordUrl, external: true };
 	});
 </script>
