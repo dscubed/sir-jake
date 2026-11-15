@@ -27,19 +27,7 @@ const applyWindow = applicationWindow(recruitment);
 
 export const load: PageServerLoad = () => {
 	const now = getContainer().clock.now();
-	return {
-		windowState: windowState(now, applyWindow),
-		opensAt: applyWindow?.opensAt.toISOString(),
-		closesAt: applyWindow?.closesAt.toISOString(),
-		form: {
-			wordLimit: recruitment.wordLimit,
-			maxResumeBytes: recruitment.maxResumeBytes,
-			graduationOptions: recruitment.graduationOptions,
-			interviews: recruitment.interviews,
-			generalQuestion: recruitment.generalQuestion,
-			roles: recruitment.roles.map(({ id, name, question }) => ({ id, name, question }))
-		}
-	};
+	return { windowState: windowState(now, applyWindow) };
 };
 
 export const actions: Actions = {

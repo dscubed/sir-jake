@@ -17,7 +17,7 @@ export type ApplyActionData =
 
 /** What the page shows after a submission. */
 export type Outcome =
-	| { kind: 'success'; submittedAt: Date }
+	| { kind: 'success' }
 	| { kind: 'closed' }
 	| { kind: 'invalid'; fieldErrors: FormErrors }
 	| { kind: 'retry'; reason: 'captcha' | 'duplicate' | 'upstream'; message: string };
@@ -52,12 +52,8 @@ function firstMessages(fieldErrors: FieldErrors): FormErrors {
  */
 export function outcomeFromResult(result: ActionResult): Outcome {
 	if (result.type === 'success') {
-		const data = result.data as Partial<{ ok: boolean; submittedAt: Date | string }> | undefined;
-		if (data?.ok && data.submittedAt) {
-			const submittedAt = new Date(data.submittedAt);
-			if (!Number.isNaN(submittedAt.getTime())) return { kind: 'success', submittedAt };
-		}
-		return retry('upstream');
+		const data = result.data as Partial<{ ok: boolean }> | undefined;
+		return data?.ok === true ? { kind: 'success' } : retry('upstream');
 	}
 
 	if (result.type === 'failure') {

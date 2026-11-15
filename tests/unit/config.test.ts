@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { recruitment } from '../../src/lib/config/recruitment';
 import { configProblems } from '../../src/lib/config/validate';
+import { applicationWindow } from '../../src/lib/domain/window';
 import type { RecruitmentConfig, Role } from '../../src/lib/config/types';
 
 const role = (id: string, name: string): Role => ({
@@ -16,6 +17,11 @@ const withRoles = (roles: Role[]): RecruitmentConfig => ({ ...recruitment, roles
 describe('recruitment config', () => {
 	it('has no problems', () => {
 		expect(configProblems(recruitment)).toEqual([]);
+	});
+
+	// Invalid dates would show the form while the server refuses every submission.
+	it('has valid opening and closing times', () => {
+		expect(applicationWindow(recruitment)).toBeDefined();
 	});
 
 	it('gives every role a question id distinct from the general question', () => {

@@ -16,7 +16,7 @@ function role(
 export const recruitment = {
 	cycle: '2027-S1',
 	opensAt: '2027-02-22T09:00:00+11:00',
-	closesAt: '2027-03-07T23:59:00+11:00',
+	closesAt: '2027-03-07T23:59:59+11:00',
 	wordLimit: 200,
 	maxResumeBytes: 4 * 1024 * 1024,
 	interviews: {

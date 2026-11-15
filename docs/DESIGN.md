@@ -156,7 +156,7 @@ flowchart LR
     subgraph vercel["Vercel (Hobby)"]
         static["Static assets + prerendered /"]
         fn["Serverless function: /apply"]
-        env[/"Environment variables<br/>NOTION_TOKEN, NOTION_DATA_SOURCE_ID,<br/>TURNSTILE_SECRET_KEY, PUBLIC_TURNSTILE_SITE_KEY"/]
+        env[/"Environment variables<br/>NOTION_TOKEN, NOTION_DATA_SOURCE_ID,<br/>NOTION_TEST_DATA_SOURCE_ID, APPLICANT_REPO,<br/>TURNSTILE_SECRET_KEY, PUBLIC_TURNSTILE_SITE_KEY"/]
         env -.-> fn
     end
     gh["GitHub repo"] -- "push to main = production deploy<br/>other branches = preview deploys" --> vercel
@@ -165,7 +165,7 @@ flowchart LR
     preview["Preview deployments"] --> testdb[("Notion: TEST Applications")]
 ```
 
-Preview deployments use a separate **test** Notion database, chosen through environment variables, so development submissions never appear in the real database.
+Preview deployments use a separate **test** Notion database, so development submissions never appear in the real database. Only production (`VERCEL_ENV=production`) reads `NOTION_DATA_SOURCE_ID`; every other environment reads `NOTION_TEST_DATA_SOURCE_ID`. Outside production the site uses an in-memory fake store unless `APPLICANT_REPO=notion` is set.
 
 ## 5. Design models
 
@@ -624,7 +624,7 @@ export interface RecruitmentConfig {
 export const recruitment = {
   cycle: "2027-S1",
   opensAt: "2027-02-22T09:00:00+11:00",
-  closesAt: "2027-03-07T23:59:00+11:00",
+  closesAt: "2027-03-07T23:59:59+11:00",
   wordLimit: 200,
   maxResumeBytes: 4 * 1024 * 1024,
   interviews: {
@@ -723,7 +723,7 @@ Outside the application window, `/apply` shows "Applications closed" instead of 
 
 ## 10. Security and privacy
 
-- **Secrets:** `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID` and `TURNSTILE_SECRET_KEY` are server-only environment variables. Only `PUBLIC_TURNSTILE_SITE_KEY` is sent to the browser.
+- **Secrets:** `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID`, `NOTION_TEST_DATA_SOURCE_ID` and `TURNSTILE_SECRET_KEY` are server-only environment variables. Only `PUBLIC_TURNSTILE_SITE_KEY` is sent to the browser.
 - **Least privilege:** the Notion integration is an *internal integration* connected to the 2027 S1 database **only**. Its capabilities are read, insert and update content. Update is needed only by the future AI job.
 - **Access:** the database is shared only with committee members who are involved in recruitment.
 - **Collection notice:** shown on the form. It states what is collected and why, who can see it, how long it is kept and how to request deletion. If AI screening is introduced, the notice also states that AI is used to assist screening and that people make every decision. Check university and student union requirements for clubs that handle personal information.
@@ -794,7 +794,7 @@ tests/
 2. Create an internal Notion integration. Connect it to both databases (open the database menu, then **Connections**).
 3. Record each database's **data source ID** for the environment variables.
 4. Create a Cloudflare Turnstile widget for the production domain and for `localhost`.
-5. Create the Vercel project from the GitHub repository. Set the production environment variables to the real database and the preview variables to the test database.
+5. Create the Vercel project from the GitHub repository. In production, set `NOTION_DATA_SOURCE_ID` to the real database. In preview, set `NOTION_TEST_DATA_SOURCE_ID` to the test database and `APPLICANT_REPO=notion`.
 6. Fill in `recruitment.ts`: roles, descriptions, questions, open and close times, interview dates.
 7. Run a full end-to-end test with committee members on a preview deployment.
 

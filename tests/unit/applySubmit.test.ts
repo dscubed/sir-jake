@@ -57,18 +57,14 @@ describe('outcomeFromResult (design §8)', () => {
 		location
 	});
 
-	it('reads a success with its submission time', () => {
+	it('reads a success', () => {
 		const result: ActionResult = {
 			type: 'success',
 			status: 200,
 			data: { ok: true, submittedAt: '2027-02-20T09:00:00+11:00' },
 			location
 		};
-		const outcome = outcomeFromResult(result);
-		expect(outcome.kind).toBe('success');
-		if (outcome.kind === 'success') {
-			expect(outcome.submittedAt.toISOString()).toBe('2027-02-19T22:00:00.000Z');
-		}
+		expect(outcomeFromResult(result)).toEqual({ kind: 'success' });
 	});
 
 	it('maps each failure reason', () => {

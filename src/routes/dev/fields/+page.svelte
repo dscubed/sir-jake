@@ -1,18 +1,14 @@
 <script lang="ts">
-	import RadioGroup from '#lib/components/form/RadioGroup.svelte';
+	import CheckboxGroup from '#lib/components/form/CheckboxGroup.svelte';
 	import SelectField from '#lib/components/form/SelectField.svelte';
 	import TextField from '#lib/components/form/TextField.svelte';
 	import { recruitment } from '#lib/config/recruitment.ts';
 
 	const roles = recruitment.roles.map((r) => ({ value: r.id, label: r.name }));
-	const yesNo = [
-		{ value: 'yes', label: 'Yes' },
-		{ value: 'no', label: 'No' }
-	];
 
 	let name = $state('');
 	let role = $state('');
-	let available = $state('');
+	let sessions = $state<string[]>([]);
 </script>
 
 <svelte:head><title>Form fields (dev)</title></svelte:head>
@@ -62,31 +58,22 @@
 			error={['Choose two different roles']}
 		/>
 
-		<h2>Radio group</h2>
-		<RadioGroup
-			name="r1"
-			label="Are you available for the group interview?"
-			helpText="Group interview: TBD"
+		<h2>Checkbox group</h2>
+		<CheckboxGroup
+			name="c1"
+			label="Which group interview sessions can you attend?"
+			helpText="Select every session you can make."
 			required
-			inline
-			options={yesNo}
-			bind:value={available}
+			options={recruitment.interviews.group}
+			bind:value={sessions}
 		/>
-		<p class="echo">Bound value: "{available}"</p>
-		<RadioGroup
-			name="r2"
-			label="Are you available for the individual interview?"
+		<p class="echo">Bound value: {JSON.stringify(sessions)}</p>
+		<CheckboxGroup
+			name="c2"
+			label="With an error"
 			required
-			inline
-			options={yesNo}
-			value="no"
-		/>
-		<RadioGroup
-			name="r3"
-			label="Stacked, with an error"
-			required
-			options={yesNo}
-			error="Choose yes or no"
+			options={recruitment.interviews.individual}
+			error="Select at least one day"
 		/>
 	</form>
 </div>

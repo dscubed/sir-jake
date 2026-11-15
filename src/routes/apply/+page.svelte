@@ -30,9 +30,7 @@
 	 * Before opening or after closing, the server's load (step 2.8) says so up front and the form
 	 * isn't shown. Unscheduled ("TBD") dates still show the form; the server decides at submit.
 	 */
-	const notOpen = $derived(
-		data.windowState === 'before' ? 'upcoming' : data.windowState === 'after' ? 'closed' : null
-	);
+	const notOpen = $derived(data.windowState === 'before' || data.windowState === 'after');
 
 	let active = $state<SectionId>('personal');
 	let submitting = $state(false);

@@ -122,8 +122,8 @@ Phase 0 gives both developers a repository that builds, a CI pipeline, a test No
 - **Do:**
   1. Import the repository into Vercel (Hobby). `main` deploys to production, and each PR gets a preview deployment.
   2. Create a Cloudflare Turnstile widget for the production hostname and `localhost`. For local development and CI, use Cloudflare's published dummy test keys (one pair always passes, one always fails), and record them in the README.
-  3. Write `.env.example` listing `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID`, `TURNSTILE_SECRET_KEY`, `PUBLIC_TURNSTILE_SITE_KEY`, `APPLICANT_REPO` (`fake` or `notion`) and `FAKE_NOW` (an ISO time used only outside production).
-  4. Set Vercel's preview variables to the TEST database and its production variables to the real one. Dev A supplies the Notion values.
+  3. Write `.env.example` listing `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID`, `NOTION_TEST_DATA_SOURCE_ID`, `TURNSTILE_SECRET_KEY`, `PUBLIC_TURNSTILE_SITE_KEY`, `APPLICANT_REPO` (`fake` or `notion`) and `FAKE_NOW` (an ISO time used only outside production).
+  4. In Vercel's preview environment, set `NOTION_TEST_DATA_SOURCE_ID` to the TEST database (and `APPLICANT_REPO=notion` to use Notion rather than the fake). In production, set `NOTION_DATA_SOURCE_ID` to the real one. Dev A supplies the Notion values.
 - **Done when:** a PR shows a working preview URL, and both environments have every variable set.
 
 ## Phase 1: Foundations and shared contracts (weeks 1 to 2)
