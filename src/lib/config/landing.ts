@@ -20,12 +20,11 @@ export const landing = {
 		eyebrow: 'How it works',
 		title: 'Our recruitment process',
 		application: 'Choose two preferred teams, answer a few short questions and upload your resume.',
-		group: 'A short group exercise with other applicants and members of the committee.',
-		individual: 'An interview with directors from your preferred teams.',
-		offer: {
-			when: 'TBD',
-			body: 'Successful applicants will hear back by email and join onboarding.'
-		}
+		group:
+			'A short group exercise with other applicants and members of the committee. There are two sessions, so come to whichever suits you.',
+		individual:
+			'An interview with directors from your preferred teams. You’ll book a time on either day.',
+		offer: 'Successful applicants will hear back by email and join onboarding.'
 	},
 	faq: {
 		eyebrow: 'FAQ',

@@ -16,7 +16,7 @@ pnpm dev
 
 The defaults in `.env.example` run the site without Notion: applications are kept in memory and printed in the terminal, and Cloudflare's test keys make the CAPTCHA always pass.
 
-To see the form open, set real `opensAt` and `closesAt` dates in `src/lib/config/recruitment.ts`. While they're `"TBD"`, applications are closed.
+Applications are only accepted between `opensAt` and `closesAt` in `src/lib/config/recruitment.ts`. To try the form outside those dates, set `FAKE_NOW` in `.env` to a time inside them, e.g. `FAKE_NOW=2027-03-01T12:00:00+11:00`.
 
 ## Scripts
 

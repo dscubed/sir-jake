@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { landing } from '#lib/config/landing.ts';
 	import { recruitment } from '#lib/config/recruitment.ts';
-	import { formatMelbourne } from '#lib/domain/window.ts';
+	import { formatMelbourneDay } from '#lib/domain/window.ts';
 
 	const { process } = landing;
-	const opens = formatMelbourne(recruitment.opensAt);
+	const opens = formatMelbourneDay(recruitment.opensAt);
+	const closes = formatMelbourneDay(recruitment.closesAt);
 
 	// Dates come from the config, so they update when the directors confirm them.
 	const steps = [
-		{ n: '01', title: 'Application', when: `Opens ${opens}`, body: process.application },
+		{ n: '01', title: 'Application', when: `${opens} – ${closes}`, body: process.application },
 		{
 			n: '02',
 			title: 'Group interview',
@@ -21,7 +22,7 @@
 			when: recruitment.interviews.individualDate,
 			body: process.individual
 		},
-		{ n: '→', title: 'Offer', when: process.offer.when, body: process.offer.body, final: true }
+		{ n: '→', title: 'Offer', when: recruitment.outcomesDate, body: process.offer, final: true }
 	];
 </script>
 

@@ -16,6 +16,7 @@ const config: RecruitmentConfig = {
 	wordLimit: 200,
 	maxResumeBytes: 4 * 1024 * 1024,
 	interviews: { groupDate: 'TBD', individualDate: 'TBD' },
+	outcomesDate: 'TBD',
 	graduationOptions: ['2028 Sem 2'],
 	generalQuestion: { id: 'why_join', label: 'Why do you want to join DSCubed?' },
 	roles: [

@@ -15,11 +15,12 @@ function role(
 
 export const recruitment = {
 	cycle: '2027-S1',
-	opensAt: 'TBD', // TO DO
-	closesAt: 'TBD', // TO DO
+	opensAt: '2027-02-22T09:00:00+11:00',
+	closesAt: '2027-03-07T23:59:00+11:00',
 	wordLimit: 200,
 	maxResumeBytes: 4 * 1024 * 1024,
-	interviews: { groupDate: 'TBD', individualDate: 'TBD' }, // TO DO
+	interviews: { groupDate: 'Wed 10 and Thu 11 March', individualDate: 'Fri 12 and Sat 13 March' },
+	outcomesDate: 'Sun 14 March',
 	graduationOptions: [
 		'2027 Sem 1',
 		'2027 Sem 2',
