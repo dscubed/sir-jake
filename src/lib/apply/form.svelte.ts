@@ -109,6 +109,12 @@ export class ApplicationForm {
 	/** Fills the form from a saved draft (step 3.5). */
 	restore(draft: Partial<FormValues>) {
 		this.values = { ...emptyValues(), ...draft };
+		// Drop interview options that are no longer offered, in case the config changed.
+		const { group, individual } = recruitment.interviews;
+		this.values.availableGroup = this.values.availableGroup.filter((o) => group.includes(o));
+		this.values.availableIndividual = this.values.availableIndividual.filter((o) =>
+			individual.includes(o)
+		);
 		// A draft could hold the same team twice if the config changed since it was saved.
 		if (this.values.secondPreference === this.values.firstPreference) {
 			this.values.secondPreference = '';

@@ -32,8 +32,16 @@ export interface RecruitmentConfig {
 	wordLimit: 200;
 	/** 4 MB, set by Vercel's request body limit. */
 	maxResumeBytes: number;
-	/** Display dates for the two interview rounds, e.g. "Wed 10 and Thu 11 March".  */
-	interviews: { groupDate: string; individualDate: string };
+	/** The interview options applicants choose from. */
+	interviews: {
+		/**
+		 * Group interview sessions the applicant picks from, e.g. "Wed 10 March". Must match the
+		 * Notion `Group interview availability` multi-select options exactly.
+		 */
+		group: readonly [string, ...string[]];
+		/** Individual interview days. Must match the `Individual interview availability` options. */
+		individual: readonly [string, ...string[]];
+	};
 	/** Display date for when outcomes are sent.  */
 	outcomesDate: string;
 	/** Must match the Notion `Expected graduation` select options exactly. */

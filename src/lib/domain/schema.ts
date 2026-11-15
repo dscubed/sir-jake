@@ -25,7 +25,12 @@ const answer = z
 		`Keep your answer to ${maxAnswerChars} characters or fewer`
 	);
 
-const yesNo = z.enum(['yes', 'no'], { error: 'Choose yes or no' }).transform((v) => v === 'yes');
+/** One or more of the given options, deduplicated and in the config's order. */
+const choices = (options: readonly [string, ...string[]], message: string) =>
+	z
+		.array(z.enum(options, { error: message }), { error: message })
+		.min(1, message)
+		.transform((picked) => options.filter((o) => picked.includes(o)));
 
 const role = z.enum(roleIds, { error: 'Choose a role' });
 
@@ -57,8 +62,8 @@ export const applicationSchema = z
 		graduation: z.enum(recruitment.graduationOptions as [string, ...string[]], {
 			error: 'Choose your expected graduation'
 		}),
-		availableGroup: yesNo,
-		availableIndividual: yesNo,
+		availableGroup: choices(recruitment.interviews.group, 'Select at least one session'),
+		availableIndividual: choices(recruitment.interviews.individual, 'Select at least one day'),
 		firstPreference: role,
 		secondPreference: role,
 		answerGeneral: answer,
@@ -76,11 +81,14 @@ export type ApplicationInput = z.output<typeof applicationSchema>;
 export type ParseResult =
 	{ success: true; data: ApplicationInput } | { success: false; fieldErrors: FieldErrors };
 
+/** Fields posted as a group of checkboxes, so they can appear several times. */
+const multiple = new Set<ApplicationField>(['availableGroup', 'availableIndividual']);
+
 /** Parses a posted form. Missing fields are reported as "Required", never thrown. */
 export function parseApplicationForm(form: FormData): ParseResult {
-	const raw: Record<string, FormDataEntryValue | undefined> = {};
+	const raw: Record<string, FormDataEntryValue | FormDataEntryValue[] | undefined> = {};
 	for (const key of Object.keys(applicationSchema.shape) as ApplicationField[]) {
-		raw[key] = form.get(key) ?? undefined;
+		raw[key] = multiple.has(key) ? form.getAll(key) : (form.get(key) ?? undefined);
 	}
 	const result = applicationSchema.safeParse(raw);
 	if (result.success) return { success: true, data: result.data };

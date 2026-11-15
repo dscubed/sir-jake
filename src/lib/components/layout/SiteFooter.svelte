@@ -1,5 +1,4 @@
 <script lang="ts">
-	import logoBlue from '#lib/assets/brand/logo-blue.png';
 	import discordIcon from '#lib/assets/brand/discord.png';
 	import { site } from '#lib/config/site.ts';
 
@@ -14,16 +13,7 @@
 <!-- eslint-disable svelte/no-navigation-without-resolve -- the only link is the external Discord invite. -->
 <footer class="site-footer {variant}">
 	<div class="bar">
-		<div class="brand">
-			<img src={logoBlue} alt="" width="24" height="28" />
-			<!--
-				The wordmark is the brand logo, read as one name. Logotypes are exempt from WCAG 1.4.3
-				contrast; automated checks (step 4.2) exclude [data-logo] for that reason.
-			-->
-			<span class="wordmark" role="img" aria-label={site.name} data-logo>
-				<span aria-hidden="true"><span class="ds">DS</span>CUBED</span>
-			</span>
-		</div>
+		<p class="copyright">© 2027 {site.name} · Data Science Student Society</p>
 		<a class="discord" href={site.discordUrl} target="_blank" rel="noopener noreferrer">
 			<img src={discordIcon} alt="" width="17" height="13" />
 			Join our Discord
@@ -56,26 +46,9 @@
 		gap: 20px;
 	}
 
-	.brand {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.brand img {
-		height: 28px;
-		width: auto;
-	}
-
-	.wordmark {
-		font-size: 17px;
-		font-weight: 700;
-		letter-spacing: 0.02em;
-		color: #ffffff;
-	}
-
-	.ds {
-		color: var(--blue);
+	.copyright {
+		font-size: var(--text-xs);
+		color: var(--footer-text);
 	}
 
 	.discord {

@@ -45,8 +45,10 @@ export interface Application {
 	degree: string;
 	/** One of the config's `graduationOptions`. */
 	graduation: string;
-	availableGroup: boolean;
-	availableIndividual: boolean;
+	/** Group interview sessions the applicant can attend, from the config. At least one. */
+	availableGroup: string[];
+	/** Individual interview days the applicant can do, from the config. At least one. */
+	availableIndividual: string[];
 	firstPreference: RoleId;
 	/** Always different from `firstPreference`. */
 	secondPreference: RoleId;

@@ -17,8 +17,8 @@ const filled = (overrides: Partial<FormValues> = {}): FormValues => ({
 	email: 'ada@student.unimelb.edu.au',
 	degree: 'Bachelor of Science',
 	graduation: '2028 Sem 2',
-	availableGroup: 'yes',
-	availableIndividual: 'no',
+	availableGroup: ['Wed 10 March'],
+	availableIndividual: ['Fri 12 March', 'Sat 13 March'],
 	firstPreference: 'events',
 	secondPreference: 'graphics',
 	answerGeneral: 'I like data.',
@@ -30,7 +30,7 @@ const filled = (overrides: Partial<FormValues> = {}): FormValues => ({
 describe('fieldError', () => {
 	it('uses a specific message for empty fields', () => {
 		expect(fieldError('fullName', '  ')).toBe('Enter your full name');
-		expect(fieldError('availableGroup', '')).toBe('Select yes or no');
+		expect(fieldError('availableGroup', [])).toBe('Select at least one session you can attend');
 		expect(fieldError('resume', null)).toBe('Upload your resume as a PDF');
 	});
 

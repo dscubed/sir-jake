@@ -15,7 +15,10 @@ const config: RecruitmentConfig = {
 	closesAt: '2027-03-06T23:59:00+11:00',
 	wordLimit: 200,
 	maxResumeBytes: 4 * 1024 * 1024,
-	interviews: { groupDate: 'TBD', individualDate: 'TBD' },
+	interviews: {
+		group: ['Wed 10 March', 'Thu 11 March'],
+		individual: ['Fri 12 March', 'Sat 13 March']
+	},
 	outcomesDate: 'TBD',
 	graduationOptions: ['2028 Sem 2'],
 	generalQuestion: { id: 'why_join', label: 'Why do you want to join DSCubed?' },
@@ -43,8 +46,8 @@ const app = (overrides: Partial<Application> = {}): Application => ({
 	email: 'ada@student.unimelb.edu.au',
 	degree: 'Bachelor of Science',
 	graduation: '2028 Sem 2',
-	availableGroup: true,
-	availableIndividual: false,
+	availableGroup: ['Wed 10 March', 'Thu 11 March'],
+	availableIndividual: ['Sat 13 March'],
 	firstPreference: 'events',
 	secondPreference: 'marketing',
 	responses: {
@@ -84,11 +87,22 @@ describe('properties', () => {
 			      "name": "Events",
 			    },
 			  },
-			  "Group interview available": {
-			    "checkbox": true,
+			  "Group interview availability": {
+			    "multi_select": [
+			      {
+			        "name": "Wed 10 March",
+			      },
+			      {
+			        "name": "Thu 11 March",
+			      },
+			    ],
 			  },
-			  "Individual interview available": {
-			    "checkbox": false,
+			  "Individual interview availability": {
+			    "multi_select": [
+			      {
+			        "name": "Sat 13 March",
+			      },
+			    ],
 			  },
 			  "Name": {
 			    "title": [

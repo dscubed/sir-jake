@@ -7,9 +7,9 @@ export interface FormValues {
 	email: string;
 	degree: string;
 	graduation: string;
-	/** "yes", "no" or "" when unanswered. */
-	availableGroup: string;
-	availableIndividual: string;
+	/** The interview options ticked, empty when none are. */
+	availableGroup: string[];
+	availableIndividual: string[];
 	firstPreference: string;
 	secondPreference: string;
 	answerGeneral: string;
@@ -24,8 +24,8 @@ export const emptyValues = (): FormValues => ({
 	email: '',
 	degree: '',
 	graduation: '',
-	availableGroup: '',
-	availableIndividual: '',
+	availableGroup: [],
+	availableIndividual: [],
 	firstPreference: '',
 	secondPreference: '',
 	answerGeneral: '',
@@ -42,8 +42,8 @@ export const requiredMessages: Record<ApplicationField, string> = {
 	email: 'Enter your student email',
 	degree: 'Enter your degree',
 	graduation: 'Select your expected graduation',
-	availableGroup: 'Select yes or no',
-	availableIndividual: 'Select yes or no',
+	availableGroup: 'Select at least one session you can attend',
+	availableIndividual: 'Select at least one day you can attend',
 	firstPreference: 'Choose your first preference',
 	secondPreference: 'Choose your second preference',
 	answerGeneral: 'Answer this question',
@@ -68,17 +68,20 @@ export const fieldOrder: readonly ApplicationField[] = [
 	'availableIndividual'
 ];
 
-const isEmpty = (value: string | File | null) =>
-	value === null || (typeof value === 'string' ? value.trim() === '' : value.size === 0);
+type FieldValue = FormValues[ValueField] | File | null;
+
+const isEmpty = (value: FieldValue) => {
+	if (value === null) return true;
+	if (typeof value === 'string') return value.trim() === '';
+	if (Array.isArray(value)) return value.length === 0;
+	return value.size === 0;
+};
 
 /**
  * Checks one field with the same Zod rules the server uses (design §7.6), so the browser and
  * server never disagree. Returns the message to show, or `undefined` if the value is valid.
  */
-export function fieldError(
-	field: ApplicationField,
-	value: string | File | null
-): string | undefined {
+export function fieldError(field: ApplicationField, value: FieldValue): string | undefined {
 	if (isEmpty(value)) return requiredMessages[field];
 	const result = applicationSchema.shape[field].safeParse(value);
 	return result.success ? undefined : result.error.issues[0]?.message;

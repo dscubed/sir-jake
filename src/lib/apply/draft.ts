@@ -8,8 +8,9 @@ export const DRAFT_KEY = 'dscubed-2027s1-draft';
 export const DRAFT_DEBOUNCE_MS = 500;
 
 /**
- * Reads a stored draft defensively: anything that isn't a known text field holding a string is
- * dropped, so an old or tampered draft can never break the form.
+ * Reads a stored draft defensively: anything that isn't a known field holding the right type
+ * (a string, or a list of strings for checkbox groups) is dropped, so an old or tampered draft
+ * can never break the form.
  */
 export function parseDraft(raw: string | null): Partial<FormValues> | null {
 	if (!raw) return null;
@@ -25,7 +26,16 @@ export function parseDraft(raw: string | null): Partial<FormValues> | null {
 	const draft: Partial<FormValues> = {};
 	for (const key of known) {
 		const value = (data as Record<string, unknown>)[key];
-		if (typeof value === 'string') draft[key] = value;
+		const empty = emptyValues()[key];
+		if (typeof empty === 'string' && typeof value === 'string') {
+			(draft as Record<string, unknown>)[key] = value;
+		} else if (
+			Array.isArray(empty) &&
+			Array.isArray(value) &&
+			value.every((v) => typeof v === 'string')
+		) {
+			(draft as Record<string, unknown>)[key] = value;
+		}
 	}
 	return Object.keys(draft).length ? draft : null;
 }
@@ -46,5 +56,5 @@ export function parseDraftSubmissionId(raw: string | null): string | null {
 
 /** True when nothing has been typed or picked, so there is nothing worth saving. */
 export function isBlank(values: FormValues): boolean {
-	return Object.values(values).every((v) => v.trim() === '');
+	return Object.values(values).every((v) => (Array.isArray(v) ? v.length === 0 : v.trim() === ''));
 }

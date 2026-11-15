@@ -19,9 +19,9 @@ export const landing = {
 		title: 'Our recruitment process',
 		application: 'Choose two preferred teams, answer a few short questions and upload your resume.',
 		group:
-			'A short group exercise with other applicants and members of the committee. There are two sessions, so come to whichever suits you.',
+			'A short group exercise with other applicants and members of the committee. You’ll choose the sessions you can attend when you apply.',
 		individual:
-			'An interview with directors from your preferred teams. You’ll book a time on either day.',
+			'An interview with directors from your preferred teams. You’ll choose the days you can do when you apply.',
 		offer: 'Successful applicants will hear back by email and join onboarding.'
 	},
 	faq: {
