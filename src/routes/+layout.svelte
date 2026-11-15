@@ -2,7 +2,7 @@
 	import '../app.css';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import favicon from '#lib/assets/favicon.svg';
+	import favicon from '#lib/assets/favicon.ico';
 	import SiteHeader from '#lib/components/layout/SiteHeader.svelte';
 	import SiteFooter from '#lib/components/layout/SiteFooter.svelte';
 	import type { NavCta, NavLink } from '#lib/components/layout/nav.ts';
