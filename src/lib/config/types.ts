@@ -10,10 +10,14 @@ export interface Role {
 	id: string;
 	/** Must match the Notion `First preference` / `Second preference` select option exactly. */
 	name: string;
-	/** Shown on the landing page. */
+	/** What the team does. Shown on the landing page. */
 	description: string;
-	/** Shown on the landing page. */
-	responsibilities: string[];
+	/** Shown on the landing page under the description. */
+	lookingFor: {
+		/** e.g. "We are looking for applicants who:" */
+		intro: string;
+		points: string[];
+	};
 	/** Exactly one question per role, asked whichever rank the role is given. */
 	question: Question;
 }

@@ -23,14 +23,14 @@ const config: RecruitmentConfig = {
 			id: 'events',
 			name: 'Events',
 			description: '',
-			responsibilities: [],
+			lookingFor: { intro: '', points: [] },
 			question: { id: 'events_q', label: 'Describe an event you would run.' }
 		},
 		{
 			id: 'marketing',
 			name: 'Marketing',
 			description: '',
-			responsibilities: [],
+			lookingFor: { intro: '', points: [] },
 			question: { id: 'marketing_q', label: 'How would you grow our audience?' }
 		}
 	]
