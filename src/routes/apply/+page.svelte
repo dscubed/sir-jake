@@ -11,6 +11,7 @@
 	import type { PageProps } from './$types';
 	import ProgressNav from '#lib/components/apply/ProgressNav.svelte';
 	import PersonalDetails from '#lib/components/apply/PersonalDetails.svelte';
+	import Availability from '#lib/components/apply/Availability.svelte';
 	import RolePreferences from '#lib/components/apply/RolePreferences.svelte';
 	import Questions from '#lib/components/apply/Questions.svelte';
 	import FormSection from '#lib/components/apply/FormSection.svelte';
@@ -218,6 +219,7 @@
 			<FormSection id="resume" title="Resume" gap={14}>
 				<ResumeInput bind:file={form.resume} error={form.shownErrors.resume} />
 			</FormSection>
+			<Availability {form} />
 			<ReviewSubmit {submitting} saveNote={draft.note} onclear={clearForm}>
 				{#snippet captcha()}
 					<Turnstile bind:this={turnstile} />

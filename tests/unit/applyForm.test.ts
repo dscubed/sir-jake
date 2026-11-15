@@ -92,6 +92,7 @@ describe('sectionProgress', () => {
 			'Not started',
 			'Choose your roles first',
 			'Not started',
+			'Not started',
 			'Finish the sections above'
 		]);
 	});
@@ -103,10 +104,10 @@ describe('sectionProgress', () => {
 		expect(sections[1]).toMatchObject({ status: 'Complete', tone: 'success' });
 	});
 
-	it('is ready to submit when all four sections are complete', () => {
+	it('is ready to submit when all five sections are complete', () => {
 		const values = filled();
 		const { sections, doneCount } = sectionProgress(values, validateForm(values, pdf()), false);
-		expect(doneCount).toBe(4);
-		expect(sections[4]).toMatchObject({ status: 'Ready to submit', tone: 'success' });
+		expect(doneCount).toBe(5);
+		expect(sections[5]).toMatchObject({ status: 'Ready to submit', tone: 'success' });
 	});
 });

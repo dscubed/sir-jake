@@ -7,6 +7,8 @@
 		/** Read out as the group's name, e.g. "Are you available for the group interview?". */
 		label: string;
 		helpText?: string;
+		/** Shown under the options, e.g. what happens if the answer is no. */
+		note?: string;
 		required?: boolean;
 		value?: string;
 		error?: string | string[];
@@ -24,6 +26,7 @@
 		name,
 		label,
 		helpText,
+		note,
 		required = false,
 		value = $bindable(''),
 		error,
@@ -39,7 +42,9 @@
 <fieldset
 	role="radiogroup"
 	class="field"
-	aria-describedby={describedBy(id, helpText, error)}
+	aria-describedby={[describedBy(id, helpText, error), note && `${id}-note`]
+		.filter(Boolean)
+		.join(' ') || undefined}
 	aria-invalid={hasError(error) || undefined}
 >
 	<legend>
@@ -55,6 +60,7 @@
 			</label>
 		{/each}
 	</div>
+	{#if note}<p id="{id}-note" class="help">{note}</p>{/if}
 	<FieldError id="{id}-error" {error} />
 </fieldset>
 
