@@ -5,15 +5,19 @@
 	import favicon from '#lib/assets/favicon.svg';
 	import SiteHeader from '#lib/components/layout/SiteHeader.svelte';
 	import SiteFooter from '#lib/components/layout/SiteFooter.svelte';
-	import type { NavLink } from '#lib/components/layout/nav.ts';
-	import { site } from '#lib/config/site.ts';
+	import type { NavCta, NavLink } from '#lib/components/layout/nav.ts';
 	import { landing } from '#lib/config/landing.ts';
 	import { liveWindowStatus } from '#lib/state/windowStatus.svelte.ts';
+	import { displayStatus } from '#lib/domain/window.ts';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
 
-	const status = liveWindowStatus(() => data.windowStatus);
+	const live = liveWindowStatus(() => data.windowStatus);
+	// On /apply, follow the server's answer so the nav always matches whether the form is shown.
+	const status = $derived(
+		page.data.windowState ? displayStatus(page.data.windowState) : live.current
+	);
 
 	const home = resolve('/');
 	// Only the landing page is dark all the way down; every other page (including /apply) has a white body.
@@ -30,13 +34,16 @@
 		sections.map(({ label, id }) => ({ label, href: isLanding ? `#${id}` : `${home}#${id}` }))
 	);
 
-	// The pill follows the application window on every page: the form while open, Discord otherwise.
-	const cta: NavLink = $derived.by(() => {
-		const label = landing.cta[status.current].nav;
-		return status.current === 'open'
-			? { label, href: resolve('/apply'), current: page.route.id === '/apply' }
-			: { label, href: site.discordUrl, external: true };
-	});
+	// The pill follows the application window on every page: the form while open, a plain label otherwise.
+	const cta: NavCta = $derived(
+		status === 'open'
+			? {
+					label: landing.cta.open.label,
+					href: resolve('/apply'),
+					current: page.route.id === '/apply'
+				}
+			: { label: landing.cta.closed }
+	);
 </script>
 
 <svelte:head>

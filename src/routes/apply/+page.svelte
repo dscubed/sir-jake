@@ -178,7 +178,7 @@
 {#if finished}
 	<SubmitStatus kind={finished} />
 {:else if notOpen}
-	<SubmitStatus kind={notOpen} opensAt={data.opensAt} focus={false} />
+	<SubmitStatus kind={notOpen} focus={false} />
 {:else}
 	<div class="layout">
 		<ProgressNav

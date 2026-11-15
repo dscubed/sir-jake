@@ -5,14 +5,18 @@
 
 	let { status }: { status: DisplayStatus } = $props();
 
-	const copy = $derived(landing.cta[status]);
+	const copy = landing.cta.open;
 </script>
 
 <section class="final" aria-labelledby="final-title">
 	<div class="inner">
-		<h2 id="final-title" class="section-title">{copy.title}</h2>
-		<p>{copy.body}</p>
-		<CtaLink {status} label={copy.hero} class="pill-button light" />
+		{#if status === 'open'}
+			<h2 id="final-title" class="section-title">{copy.title}</h2>
+			<p>{copy.body}</p>
+			<CtaLink {status} class="pill-button light" />
+		{:else}
+			<h2 id="final-title" class="section-title">{landing.cta.closed}</h2>
+		{/if}
 	</div>
 </section>
 

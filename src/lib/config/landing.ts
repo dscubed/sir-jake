@@ -1,5 +1,3 @@
-import type { DisplayStatus } from '#lib/domain/window.ts';
-
 export const landing = {
 	hero: {
 		title: 'Join the largest data science student society in Australia',
@@ -51,24 +49,13 @@ export const landing = {
 	/** Calls to action change with the application window. */
 	cta: {
 		open: {
-			hero: 'Apply now',
-			nav: 'Apply now',
+			label: 'Apply now',
 			title: 'Ready to join the committee?',
 			body: 'Choose your preferred teams on the application page. It takes about 20 minutes.'
 		},
-		upcoming: {
-			hero: 'Get notified on Discord',
-			nav: 'Get notified',
-			title: 'Applications open soon',
-			body: 'Join our Discord to hear the moment applications open.'
-		},
-		closed: {
-			hero: 'Join our Discord',
-			nav: 'Join Discord',
-			title: 'Thanks for your interest',
-			body: 'Applications for 2027 Semester 1 have closed. Join our Discord to hear about the next round.'
-		}
-	} satisfies Record<DisplayStatus, { hero: string; nav: string; title: string; body: string }>
+		/** Shown before applications open and after they close. */
+		closed: 'Applications closed'
+	}
 };
 
 const numberWords = [
