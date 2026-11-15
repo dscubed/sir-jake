@@ -13,7 +13,7 @@
 
 <FormSection id="questions" title="Questions" gap={32}>
 	{#snippet intro()}
-		Up to {recruitment.wordLimit} words each. Be yourself; there are no right answers.
+		Be yourself! There are no right answers.
 	{/snippet}
 	{#each form.questions as question (question.field)}
 		<QuestionField

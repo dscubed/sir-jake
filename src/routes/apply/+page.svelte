@@ -171,8 +171,8 @@
 <section class="hero" aria-labelledby="apply-title">
 	<div class="hero-inner">
 		<span class="eyebrow">2027 Semester 1 · Officer application</span>
-		<h1 id="apply-title">Apply to join the DSCubed committee</h1>
-		<p>Your answers save automatically on this device, so you can come back and finish later.</p>
+		<h1 id="apply-title">Application Form</h1>
+		<p>Join to meet cool people, you won't regret it :)</p>
 	</div>
 </section>
 
