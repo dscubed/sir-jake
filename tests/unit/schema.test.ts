@@ -13,8 +13,8 @@ const valid = () => ({
 	email: 'ada@student.unimelb.edu.au',
 	degree: 'Bachelor of Science',
 	graduation: recruitment.graduationOptions[0],
-	availableGroup: 'yes',
-	availableIndividual: 'no',
+	availableGroup: [recruitment.interviews.group[0]],
+	availableIndividual: [...recruitment.interviews.individual],
 	firstPreference: roleA,
 	secondPreference: roleB,
 	answerGeneral: 'Because I love data.',
@@ -95,20 +95,23 @@ describe('applicationSchema', () => {
 	});
 
 	describe('availability', () => {
-		it('turns "yes" and "no" into booleans', () => {
-			const out = applicationSchema.parse({
-				...valid(),
-				availableGroup: 'yes',
-				availableIndividual: 'no'
-			});
-			expect(out.availableGroup).toBe(true);
-			expect(out.availableIndividual).toBe(false);
+		const [day1, day2] = recruitment.interviews.group;
+
+		it('accepts one or more options, deduplicated and in config order', () => {
+			const out = applicationSchema.parse({ ...valid(), availableGroup: [day2, day1, day2] });
+			expect(out.availableGroup).toEqual([day1, day2]);
 		});
-		it('rejects other values and missing answers', () => {
-			expect(errorsFor({ availableGroup: 'maybe' })?.availableGroup).toEqual(['Choose yes or no']);
-			expect(errorsFor({ availableIndividual: undefined })?.availableIndividual).toEqual([
-				'Choose yes or no'
+		it('needs at least one option', () => {
+			expect(errorsFor({ availableGroup: [] })?.availableGroup).toEqual([
+				'Select at least one session'
 			]);
+			expect(errorsFor({ availableIndividual: undefined })?.availableIndividual).toEqual([
+				'Select at least one day'
+			]);
+		});
+		it('rejects options that are not offered', () => {
+			expect(errorsFor({ availableGroup: ['Sun 1 January'] })?.availableGroup).toBeDefined();
+			expect(errorsFor({ availableGroup: 'yes' })?.availableGroup).toBeDefined();
 		});
 	});
 
@@ -182,16 +185,21 @@ describe('applicationSchema', () => {
 });
 
 describe('parseApplicationForm', () => {
-	const toForm = (values: Record<string, string | File>) => {
+	const toForm = (values: Record<string, string | string[] | File>) => {
 		const form = new FormData();
-		for (const [k, v] of Object.entries(values)) form.append(k, v);
+		for (const [k, v] of Object.entries(values)) {
+			for (const item of Array.isArray(v) ? v : [v]) form.append(k, item);
+		}
 		return form;
 	};
 
 	it('parses a valid form', () => {
 		const result = parseApplicationForm(toForm(valid()));
 		expect(result.success).toBe(true);
-		if (result.success) expect(result.data.availableGroup).toBe(true);
+		if (result.success) {
+			expect(result.data.availableGroup).toEqual([recruitment.interviews.group[0]]);
+			expect(result.data.availableIndividual).toEqual([...recruitment.interviews.individual]);
+		}
 	});
 
 	it('reports an error for every missing field without throwing', () => {

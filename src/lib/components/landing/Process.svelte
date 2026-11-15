@@ -13,13 +13,13 @@
 		{
 			n: '02',
 			title: 'Group interview',
-			when: recruitment.interviews.groupDate,
+			when: recruitment.interviews.group.join(' and '),
 			body: process.group
 		},
 		{
 			n: '03',
 			title: 'Individual interview',
-			when: recruitment.interviews.individualDate,
+			when: recruitment.interviews.individual.join(' and '),
 			body: process.individual
 		},
 		{ n: '→', title: 'Offer', when: recruitment.outcomesDate, body: process.offer, final: true }

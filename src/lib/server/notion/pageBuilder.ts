@@ -21,8 +21,10 @@ export function properties(
 		[PROP.email]: { email: app.email },
 		[PROP.degree]: { rich_text: plainText(app.degree) },
 		[PROP.graduation]: { select: { name: app.graduation } },
-		[PROP.availableGroup]: { checkbox: app.availableGroup },
-		[PROP.availableIndividual]: { checkbox: app.availableIndividual },
+		[PROP.availableGroup]: { multi_select: app.availableGroup.map((name) => ({ name })) },
+		[PROP.availableIndividual]: {
+			multi_select: app.availableIndividual.map((name) => ({ name }))
+		},
 		[PROP.firstPreference]: { select: { name: roleById(config, app.firstPreference).name } },
 		[PROP.secondPreference]: { select: { name: roleById(config, app.secondPreference).name } },
 		[PROP.resume]: {

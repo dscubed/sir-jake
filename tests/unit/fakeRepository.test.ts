@@ -11,8 +11,8 @@ const app = (email = 'ada@student.unimelb.edu.au'): Application => ({
 	email,
 	degree: 'Bachelor of Science',
 	graduation: '2028 Sem 2',
-	availableGroup: true,
-	availableIndividual: false,
+	availableGroup: ['Wed 10 March', 'Thu 11 March'],
+	availableIndividual: ['Sat 13 March'],
 	firstPreference: 'events',
 	secondPreference: 'graphics',
 	responses: { general: 'one two three', firstPreference: 'four', secondPreference: 'five six' },
@@ -102,7 +102,7 @@ describe('FakeApplicantRepository', () => {
 		expect(summary).toContain(`created ${pageId}`);
 		expect(summary).toContain('Ada Lovelace <ada@student.unimelb.edu.au>');
 		expect(summary).toContain('1. events  2. graphics');
-		expect(summary).toContain('group yes, individual no');
+		expect(summary).toContain('group Wed 10 March, Thu 11 March; individual Sat 13 March');
 		expect(summary).toContain('general 3 words, first 1 words, second 2 words');
 		expect(summary).toContain('resume.pdf (2 KB)');
 	});

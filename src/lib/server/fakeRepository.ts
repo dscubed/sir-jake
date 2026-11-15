@@ -88,11 +88,9 @@ function summarise(pageId: PageId, app: Application): string {
 		`[fake repository] created ${pageId} (submission ${app.submissionId})`,
 		`  ${app.fullName} <${app.email}>, ${app.degree}, graduating ${app.graduation}`,
 		`  Roles: 1. ${app.firstPreference}  2. ${app.secondPreference}`,
-		`  Interviews: group ${yesNo(app.availableGroup)}, individual ${yesNo(app.availableIndividual)}`,
+		`  Interviews: group ${app.availableGroup.join(', ')}; individual ${app.availableIndividual.join(', ')}`,
 		`  Answers: general ${words(app.responses.general)}, first ${words(app.responses.firstPreference)}, second ${words(app.responses.secondPreference)}`,
 		`  Resume: ${app.resume.filename} (${kb} KB)`,
 		`  Submitted at ${app.submittedAt.toISOString()}`
 	].join('\n');
 }
-
-const yesNo = (value: boolean) => (value ? 'yes' : 'no');

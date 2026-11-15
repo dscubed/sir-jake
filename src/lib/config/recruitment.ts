@@ -19,7 +19,10 @@ export const recruitment = {
 	closesAt: '2027-03-07T23:59:00+11:00',
 	wordLimit: 200,
 	maxResumeBytes: 4 * 1024 * 1024,
-	interviews: { groupDate: 'Wed 10 and Thu 11 March', individualDate: 'Fri 12 and Sat 13 March' },
+	interviews: {
+		group: ['Wed 10 March', 'Thu 11 March'],
+		individual: ['Fri 12 March', 'Sat 13 March']
+	},
 	outcomesDate: 'Sun 14 March',
 	graduationOptions: [
 		'2027 Sem 1',

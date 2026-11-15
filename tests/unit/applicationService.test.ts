@@ -28,8 +28,8 @@ function validForm(overrides: Record<string, string | File | null> = {}): FormDa
 		email: ' Ada@Student.UniMelb.edu.au ',
 		degree: 'Bachelor of Science',
 		graduation: config.graduationOptions[2],
-		availableGroup: 'yes',
-		availableIndividual: 'no',
+		availableGroup: config.interviews.group[1],
+		availableIndividual: config.interviews.individual[0],
 		firstPreference: roleA,
 		secondPreference: roleB,
 		answerGeneral: 'I love data.',
@@ -87,8 +87,8 @@ describe('ApplicationService.submit', () => {
 		expect(stored).toMatchObject({
 			fullName: 'Ada Lovelace',
 			email: 'ada@student.unimelb.edu.au',
-			availableGroup: true,
-			availableIndividual: false,
+			availableGroup: [config.interviews.group[1]],
+			availableIndividual: [config.interviews.individual[0]],
 			firstPreference: roleA,
 			secondPreference: roleB,
 			responses: {

@@ -101,8 +101,8 @@ describe('create', () => {
 		email,
 		degree: 'Bachelor of Science (Data Science)',
 		graduation: recruitment.graduationOptions[3],
-		availableGroup: true,
-		availableIndividual: false,
+		availableGroup: [...recruitment.interviews.group],
+		availableIndividual: [recruitment.interviews.individual[1]],
 		firstPreference: first.id,
 		secondPreference: second.id,
 		responses: {
@@ -144,13 +144,15 @@ describe('create', () => {
 				: prop.type === 'status'
 					? prop.status?.name
 					: undefined;
+		const options = (prop: (typeof p)[string]) =>
+			prop.type === 'multi_select' ? prop.multi_select.map((o) => o.name) : undefined;
 
 		expect(text(p[PROP.name])).toBe(app.fullName);
 		expect(p[PROP.email]).toMatchObject({ email });
 		expect(text(p[PROP.degree])).toBe(app.degree);
 		expect(option(p[PROP.graduation])).toBe(app.graduation);
-		expect(p[PROP.availableGroup]).toMatchObject({ checkbox: true });
-		expect(p[PROP.availableIndividual]).toMatchObject({ checkbox: false });
+		expect(options(p[PROP.availableGroup])).toEqual(app.availableGroup);
+		expect(options(p[PROP.availableIndividual])).toEqual(app.availableIndividual);
 		expect(option(p[PROP.firstPreference])).toBe(first.name);
 		expect(option(p[PROP.secondPreference])).toBe(second.name);
 		expect(option(p[PROP.stage])).toBe('Applied');
