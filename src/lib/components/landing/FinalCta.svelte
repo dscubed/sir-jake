@@ -10,13 +10,10 @@
 
 <section class="final" aria-labelledby="final-title">
 	<div class="inner">
-		{#if status === 'open'}
-			<h2 id="final-title" class="section-title">{copy.title}</h2>
-			<p>{copy.body}</p>
-			<CtaLink {status} class="pill-button light" />
-		{:else}
-			<h2 id="final-title" class="section-title">{landing.cta.closed}</h2>
-		{/if}
+		<h2 id="final-title" class="section-title">{copy.title}</h2>
+		<p>{copy.body}</p>
+		<!-- Outside the application window this is the greyed-out "Applications closed" label. -->
+		<CtaLink {status} class="pill-button light" />
 	</div>
 </section>
 
