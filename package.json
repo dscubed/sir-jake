@@ -18,7 +18,7 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"test": "vitest run --project unit",
-		"test:e2e": "playwright test --pass-with-no-tests",
+		"test:e2e": "vite build && playwright test",
 		"test:watch": "vitest --project unit",
 		"test:notion": "vitest run --project notion"
 	},
