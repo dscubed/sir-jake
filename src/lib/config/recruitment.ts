@@ -32,13 +32,13 @@ export const recruitment = {
 		id: 'why_join',
 		label: 'Why do you want to join the DSCubed committee, and what would you bring to the team?'
 	},
-	// Order follows the design handoff (placeholder copy until step 4.3).
+
 	roles: [
 		// id, name, description, question
 		placeholderRole(
 			'events',
 			'Events',
-			'From game show nights to the Inter-Uni Datathon, you’ll turn ideas into events hundreds of students show up for, and be there on the night making it happen.',
+			'From trivia nights to the Inter-Uni Datathon, you’ll turn ideas into events for hundreds of students!',
 			'Describe an event you would love DSCubed to run. How would you make it happen?'
 		),
 		// Marketing is split into two teams: Graphics (posters and design) and Media (reels and short-form content).
