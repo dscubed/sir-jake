@@ -2,14 +2,13 @@
 	import { resolve } from '$app/paths';
 	import { landing } from '#lib/config/landing.ts';
 
-	/** Shown instead of the form: after a submission, or when applications aren't open. */
+	/** Shown instead of the form when applications aren't open, or the server says they've closed. */
 	interface Props {
-		kind: 'success' | 'closed' | 'upcoming';
 		/** Move focus to the heading. Only after a submission, never on a plain page load. */
 		focus?: boolean;
 	}
 
-	let { kind, focus = true }: Props = $props();
+	let { focus = true }: Props = $props();
 
 	let heading: HTMLHeadingElement | undefined = $state();
 
@@ -22,24 +21,7 @@
 
 <div class="status">
 	<div class="card">
-		{#if kind === 'success'}
-			<span class="tick" aria-hidden="true">
-				<svg viewBox="0 0 16 16" width="20" height="20"
-					><path
-						d="M3.5 8.5l3 3 6-7"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/></svg
-				>
-			</span>
-			<h2 bind:this={heading} tabindex="-1">Thank you for applying</h2>
-			<p class="lead">We wish you the best of luck.</p>
-		{:else}
-			<h2 bind:this={heading} tabindex="-1">{landing.cta.closed}</h2>
-		{/if}
+		<h2 bind:this={heading} tabindex="-1">{landing.cta.closed}</h2>
 		<div class="actions">
 			<a class="button" href={resolve('/')}>Back to recruitment</a>
 		</div>
@@ -63,17 +45,6 @@
 		background: var(--surface-light);
 	}
 
-	.tick {
-		width: 44px;
-		height: 44px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		background: var(--blue);
-		color: #ffffff;
-	}
-
 	h2 {
 		font-size: var(--text-xl);
 		font-weight: 500;
@@ -82,11 +53,6 @@
 
 	h2:focus {
 		outline: none;
-	}
-
-	.lead {
-		line-height: var(--leading-normal);
-		color: var(--ink-2);
 	}
 
 	.actions {
