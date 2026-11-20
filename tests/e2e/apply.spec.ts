@@ -119,7 +119,7 @@ test.describe('application form', () => {
 test.describe('after applications close', () => {
 	test('the form is replaced by the closed message', async ({ page }) => {
 		await page.goto(`${CLOSED_URL}/apply`);
-		await expect(page.getByRole('heading', { name: 'Applications closed' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Applications are currently closed' })).toBeVisible();
 		await expect(page.locator('form#application')).toHaveCount(0);
 	});
 

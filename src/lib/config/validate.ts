@@ -3,7 +3,7 @@ import type { RecruitmentConfig } from './types';
 export function configProblems(config: RecruitmentConfig): string[] {
 	const problems: string[] = [];
 
-	if (config.roles.length < 2) problems.push('There must be at least two roles (FR3).');
+	if (config.roles.length < 2) problems.push('There must be at least two roles.');
 
 	const ids = config.roles.map((r) => r.id);
 	const names = config.roles.map((r) => r.name);
