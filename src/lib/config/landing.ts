@@ -11,7 +11,7 @@ export const landing = {
 	},
 	teams: {
 		eyebrow: 'Our teams',
-		title: '{count} teams, all hiring officers',
+		title: 'They’re hiring!',
 		body: 'Learn more about them here.'
 	},
 	process: {
